@@ -1,37 +1,64 @@
-<html lang="en">
+<html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    
-    <title>WoW</title>
-    <meta name="exists.">
-    
-    <link rel="stylesheet" href="style.css">
+    <title>Laborator Programare Web</title>
 </head>
-<body>
+<body bgcolor="#f4f7f6">
 
-    <header>
-        <h1>Welcome</h1>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
+    <center>
+        <h1>Proiect: Desktop Virtual</h1>
+        <img src="https://cdn-icons-png.flaticon.com/512/3606/3606645.png" 
+             alt="Imagine Desktop" 
+             width="100" 
+             height="100" 
+             title="desktop">
+    </center>
 
-    <main>
-        <article>
-            <h2>Main Content Heading</h2>
-            <p>Enjoy your stay...</p>
-        </article>
-    </main>
+    <hr>
 
-    <aside>
-        <h3>Sidebar</h3>
-        <p>Additional info or links.</p>
-    </aside>
+    <div align="left">
+        <p>Aplicatia Web va permite stocarea fisierelor intr-un "Desktop Virtual". Aceste desktop poate fi interactionat de mai multi utilizatori si ofera posibilitatea
+            de a incarca / sterge / muta fisiere prin <span style="font-family: monospace;">WebSockets</span>.
+        </p>
+    </div>
+
+    <h3>Caracteristici de bază:</h3>
+    <ul>
+        <li>Mutarea obiectelor prin Drag and Drop.</li>
+        <li>Suporta fisiere de baza: .txt, .jpg, .png</li>
+    </ul>
+
+    <br />
+
+    <table border="1" width="100%" bgcolor="#ffffff">
+        <tr>
+            <th colspan="2" align="center" bgcolor="#dddddd">Roadmap</th>
+        </tr>
+        <tr valign="middle">
+            <td width="50%" align="center"><b>Week</b></td>
+            <td width="50%" align="center"><b>Goal</b></td>
+        </tr>
+        <tr valign="middle">
+            <td width="30%" align="center">Week 3</td>
+            <td width="30%" align="center">Pagina de logare</td> 
+        </tr>
+    </table>
+
+    <br />
+
+    <fieldset>
+        <legend><b>Tehnologi folosite</b></legend>
+        <form action="#" method="post">
+            
+            <label>MongoDB</label>
+            <br />
+            <label>Framework:</label>
+            <select name="modes" multiple size="2">
+                <option value="edit" selected>Express.js</option>
+                <option value="view">Nest.js</option>
+                <option value="admin">Elysia.js</option>
+            </select> 
+        </form>
+    </fieldset>
 </body>
 </html>
