@@ -6,7 +6,7 @@
 <body bgcolor="#f4f7f6">
 
     <center>
-        <h1>Proiect: Desktop Virtual</h1>
+        <h1>Desktop Virtual</h1>
         <img src="https://cdn-icons-png.flaticon.com/512/3606/3606645.png" 
              alt="Imagine Desktop" 
              width="100" 
@@ -22,10 +22,14 @@
         </p>
     </div>
 
-    <h3>Caracteristici de bază:</h3>
+    <h2>Caracteristici de baza:</h2>
     <ul>
-        <li>Mutarea obiectelor prin Drag and Drop.</li>
-        <li>Suporta fisiere de baza: .txt, .jpg, .png</li>
+        <h3> 
+            <li>Mutarea obiectelor prin Drag and Drop.</li>
+        </h3>
+        <h3>
+            <li>Suporta fisiere de baza: .txt, .jpg, .png</li>
+        </h3>
     </ul>
 
     <br />
