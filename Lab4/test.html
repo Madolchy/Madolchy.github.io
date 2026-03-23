@@ -188,6 +188,47 @@
             console.log("Produsul Xiaomi nu a putut fi gasit.");
         }
 
+        document.forms[0].addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            let elems = document.forms[0].elements;
+            console.log(elems)
+            let valNume = elems['nume_produs'].value
+            let valCantitate = elems['cantitate'].value
+
+            let categoriiSelected = [];
+            for (let i = 0; i < elems['categorie'].options.length; i++) {
+                if (elems['categorie'].options[i].selected) {
+                    categoriiSelected.push(elems['categorie'].options[i].value);
+                }
+            }
+
+            let dateForm = {
+                nume: valNume,
+                pret: 1500,
+                cantitate: valCantitate,
+                categorie: categoriiSelected.join(', '),
+                sigilat: elems['sigilat'].checked,
+                resigilat: elems['resigilat'].disabled ? false : elems['resigilat'].checked,
+                observatii: elems['observatii'].value
+            };
+
+            console.log("Date citite din formular:", dateForm);
+
+            if (valNume === "") {
+                alert("Numele produsului nu poate fi gol!");
+                return;
+            }
+
+            if (valCantitate <= 0) {
+                alert("Cantitatea trebuie sa fie un numar pozitiv!");
+                return;
+            }
+
+            produse.push(dateForm);
+            console.log("Produs adaugat cu succes in stoc! Total produse:", produse.length, produse);
+        });
+
     </script>
 </body>
 
