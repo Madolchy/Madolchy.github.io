@@ -109,10 +109,6 @@
     </table>
 
     <br><br>
-    <center>
-        <a href="#sus" name="link_inapoi_sus" target="_self">Inapoi la inceputul paginii</a><br><br>
-        <a href="https://google.com" name="link_extern" target="_blank">Cautare informatii suplimentare</a>
-    </center>
 
     <script>
         var numeMagazin = "Shop";
@@ -139,6 +135,58 @@
         let totalRedus = aplicaDiscount(total, 10);
         let pretFormatat = formatPret(totalRedus);
         console.log(pretFormatat);
+
+        let produse = [
+            { nume: "Apple", pret: 5000, cantitate: 2, categorie: "Telefoane" },
+            { nume: "Samsung", pret: 4500, cantitate: 1, categorie: "Telefoane" },
+            { nume: "Motorola", pret: 2000, cantitate: 3, categorie: "Telefoane" },
+            { nume: "Google", pret: 3500, cantitate: 2, categorie: "Telefoane" },
+            { nume: "Nokia", pret: 1000, cantitate: 5, categorie: "Telefoane" }
+        ];
+
+        produse.forEach(function (produs) {
+            console.log("Produs curent: " + produs.nume);
+        });
+
+        let totalPeProdus = produse.map(function (produs) {
+            return produs.pret * produs.cantitate;
+        });
+
+        var magazin = {
+            nume: "Shop",
+            adresa: "strada Dr. Victor Babeș, nr. 62A, cod poștal 430083",
+            produse: produse,
+            afiseazaProduse: function () {
+                this.produse.forEach(function (produs) {
+                    console.log(produs.nume);
+                });
+            },
+            calculeazaValoareTotala: function () {
+                let suma = 0;
+                this.produse.forEach(function (produs) {
+                    suma += produs.pret * produs.cantitate;
+                });
+                return suma;
+            },
+            gasesteProdus: function (numeProdus) {
+                return this.produse.find(function (produs) {
+                    return produs.nume === numeProdus;
+                });
+            }
+        };
+
+        magazin.afiseazaProduse();
+        document.write("<br><b>Valoarea totala a stocului este:</b> " + magazin.calculeazaValoareTotala() + " RON");
+
+        let produsS = magazin.gasesteProdus("Samsung");
+        if (produsS) {
+            console.log("Am gasit produsul: " + produsS.nume);
+        }
+
+        let produsX = magazin.gasesteProdus("Xiaomi");
+        if (!produsX) {
+            console.log("Produsul Xiaomi nu a putut fi gasit.");
+        }
 
     </script>
 </body>
