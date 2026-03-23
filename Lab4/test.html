@@ -9,8 +9,8 @@
     <a name="sus"></a>
 
     <center>
-        <h1>...</h1>
-        <h2>...</h2>
+        <h1>Shop</h1>
+        <h2>Shop pentru telefoane</h2>
     </center>
 
     <p>
@@ -113,6 +113,34 @@
         <a href="#sus" name="link_inapoi_sus" target="_self">Inapoi la inceputul paginii</a><br><br>
         <a href="https://google.com" name="link_extern" target="_blank">Cautare informatii suplimentare</a>
     </center>
+
+    <script>
+        var numeMagazin = "Shop";
+        let numarProduse = 5;
+        const versiuneAplicatie = "0.0.1";
+
+        alert(numeMagazin);
+        console.log(numarProduse);
+        document.write(versiuneAplicatie);
+
+        function calculeazaTotal(pret, cantitate) {
+            return pret * cantitate;
+        }
+
+        const aplicaDiscount = function (total, procent) {
+            return total - (total * (procent / 100));
+        };
+
+        const formatPret = (suma) => {
+            return suma.toFixed(2) + " RON";
+        };
+
+        let total = calculeazaTotal(25.5, 3);
+        let totalRedus = aplicaDiscount(total, 10);
+        let pretFormatat = formatPret(totalRedus);
+        console.log(pretFormatat);
+
+    </script>
 </body>
 
 </html>
