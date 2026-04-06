@@ -2,27 +2,25 @@ import 'dotenv/config';
 
 import express from 'express';
 import type { Request, Response } from 'express';
-import { AuthService } from './services/.auth.js';
-import { success } from 'zod';
-import { DBService } from './services/auth.js';
-import { PrismaClient } from './generated/prisma/client.js';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { DBService } from './db/auth.js';
 import { uploadService } from './services/diskStorageService.js';
-import { requireAuth } from './services/jwt.js';
-import { meta } from 'zod/v4/core';
+import { requireLogin } from './middleware/RequireLogin.js';
 import { FileManagerService } from './services/FileManagerService.js';
+import { VisitCounter } from './middleware/VisitCounter.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(cookieParser())
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', VisitCounter, (req: Request, res: Response) => {
     res.send('Hello from Express and TypeScript!');
 });
 
 app.post("/api/register", async (req: Request, res: Response) => {
-    const result = await DBService.register_user(req);
+    const result = await DBService.registerUser(req);
     if (!result.success) {
         console.log(result)
         return res.status(400).json({
@@ -40,8 +38,7 @@ app.post("/api/register", async (req: Request, res: Response) => {
 })
 
 app.post("/api/login", async (req: Request, res: Response) => {
-    console.log("a")
-    const result = await DBService.login_user(req);
+    const result = await DBService.loginUser(req);
     if (!result.success) {
         console.log(result)
         return res.status(400).json({
@@ -56,7 +53,24 @@ app.post("/api/login", async (req: Request, res: Response) => {
     })
 })
 
-app.post('/api/upload', requireAuth, uploadService.single('myFile'), async (req: Request, res: Response) => {
+app.post("/api/logout", requireLogin, async (req: Request, res: Response) => {
+    const result = await DBService.logoutUser(req);
+    if (!result.success) {
+        console.log(result)
+        return res.status(400).json({
+            success: false,
+            message: "Logout failed somehow"
+        })
+    }
+
+    return res.status(200).json({
+        success: true,
+    })
+})
+
+
+
+app.post('/api/upload', requireLogin, uploadService.single('myFile'), async (req: Request, res: Response) => {
     const file = req.file;
     if (!file) {
         return res.status(400).json({ success: false, message: "No file upload" })
@@ -82,7 +96,7 @@ app.post('/api/upload', requireAuth, uploadService.single('myFile'), async (req:
     }
 })
 
-app.post('/api/desktop/swap', requireAuth, async (req: Request, res: Response) => {
+app.post('/api/desktop/swap', requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
 
     const { first, second } = req.body;
@@ -96,7 +110,7 @@ app.post('/api/desktop/swap', requireAuth, async (req: Request, res: Response) =
     return res.status(400).json({});
 })
 
-app.get('/api/desktop', requireAuth, async (req: Request, res: Response) => {
+app.get('/api/desktop', VisitCounter, requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id; 
     console.log(uuid)
     const items = await FileManagerService.getUserDesktop(uuid);
@@ -110,8 +124,8 @@ app.get('/api/desktop', requireAuth, async (req: Request, res: Response) => {
 })
 
 app.post("/api/db", async (req: Request, res: Response) => {
-    console.log("All avalible users: ", await DBService.get_users());
-    console.log(await DBService.register_user(req));
+    console.log("All avalible users: ", await DBService.getUsers());
+    console.log(await DBService.registerUser(req));
 })
 
 app.listen(port as number, "127.0.0.1", () => {

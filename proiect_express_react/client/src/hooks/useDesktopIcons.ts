@@ -2,16 +2,19 @@ import { useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileManagerService } from '../services/FileUploadService';
 import { apiClient } from '../client/apiClient';
+import useThumbnail from './useThumbnail';
 
 export function useDesktopIcons() {
     const queryClient = useQueryClient();
-    const draggedBoxRef = useRef<number | undefined>(undefined);
-
+    const { isResizing, progress, processBatch } = useThumbnail();
     const { data: gridData, isLoading, isError } = useQuery({
         queryKey: ['desktopIcons'],
         queryFn: async () => await FileManagerService.getUserDesktop(),
         staleTime: Infinity,
     });
+
+
+    const draggedBoxRef = useRef<number | undefined>(undefined);
 
     const handleSelect = useCallback((index: number) => {
         draggedBoxRef.current = index;
@@ -23,20 +26,20 @@ export function useDesktopIcons() {
 
         if (sourceIndex === undefined || sourceIndex === newPosition) return;
 
-        const result = await apiClient.post('/desktop/swap', { 
+        const result = await apiClient.post('/desktop/swap', {
             json: { first: sourceIndex, second: newPosition }
         });
-        
+
         if (result.ok) {
             queryClient.invalidateQueries({ queryKey: ['desktopIcons'] });
         }
     }, [queryClient]);
 
-    return { 
-        gridData, 
-        isLoading, 
-        isError, 
-        handleSelect, 
-        handleSwap 
+    return {
+        gridData,
+        isLoading,
+        isError,
+        handleSelect,
+        handleSwap
     };
 }

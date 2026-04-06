@@ -4,8 +4,10 @@ import "./DesktopGrid.css";
 
 import { useGrid } from '../hooks/useGrid';
 import { useDesktopIcons } from '../hooks/useDesktopIcons';
+import useThumbnail from '../hooks/useThumbnail';
 
-export default function DesktopGrid({ handleDrop, handleDragOver }) {
+
+export default function DesktopGrid({ onCellDrop }) {
     const [boxNumberPerRow, setBoxNumberPerRow] = useState(16);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -18,7 +20,7 @@ export default function DesktopGrid({ handleDrop, handleDragOver }) {
 
         const gridArray = Array.from({ length: boxNumberPerRow * boxNumberPerRow });
         gridData.forEach((element) => { gridArray[element.cell] = element; });
-        
+
         return gridArray;
     }, [gridData, boxNumberPerRow]);
 
@@ -42,8 +44,7 @@ export default function DesktopGrid({ handleDrop, handleDragOver }) {
                     data={data}
                     onMouseDownCallback={handleSelect}
                     onMouseUpCallback={handleSwap}
-                    handleDrop={handleDrop}
-                    handleDragOver={handleDragOver}
+                    onCellDrop = {onCellDrop}
                 />
             ))}
         </div>

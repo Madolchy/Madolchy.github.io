@@ -23,7 +23,7 @@ const typeToIcon: Record<string, React.ComponentType> = {
     'default': SquareSVG
 };
 
-const DesktopIcon = React.memo(({ id, data, onMouseUpCallback, onMouseDownCallback, handleDrop, handleDragOver }: any) => {
+const DesktopIcon = React.memo(({ id, data, onMouseUpCallback, onMouseDownCallback, onCellDrop}: any) => {
     const IconComponent = typeToIcon[data?.file_type] || EmptyIcon
 
     return (
@@ -40,8 +40,8 @@ const DesktopIcon = React.memo(({ id, data, onMouseUpCallback, onMouseDownCallba
             onMouseUp={() => onMouseUpCallback(id)}
             onDragStart={(e) => e.preventDefault()}
             
-            onDrop={(e) => handleDrop(e, id)}
-            onDragOver={(e) => handleDragOver(e)}
+            onDrop={(e) => onCellDrop(e, id)}
+            onDragOver={(e) => e.preventDefault()}
         >
             {id == 20 && <div className="icon-highlight" />}
             <div style={{ pointerEvents: 'none', position: 'relative', zIndex: 2 }}>

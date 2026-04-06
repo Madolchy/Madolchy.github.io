@@ -1,7 +1,4 @@
 import type { Request, Response } from 'express';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { UserCreateInputSchema, UserSchema } from '../generated/zod/index.js';
-import { PrismaClient } from '../generated/prisma/client.js';
 import z, { success } from 'zod';
 import bcrypt from "bcrypt";
 import jwt from 'jsonwebtoken';
@@ -25,7 +22,7 @@ const saltRounds = 10;
 
 
 export const DBService = {
-    register_user: async (req: Request) => {
+    registerUser: async (req: Request) => {
         console.log(req.body)
         const validationResult = SignupRequestSchema.safeParse(req.body)
         if (!validationResult.success) {
@@ -38,7 +35,7 @@ export const DBService = {
 
         try {
             await prisma.user.create({
-                data: { ...publicValidData, password_hash: pwHash, uuid:uuid}
+                data: { ...publicValidData, password_hash: pwHash, uuid: uuid }
             })
         }
         catch (e) {
@@ -48,7 +45,7 @@ export const DBService = {
         return { success: true }
     },
 
-    login_user: async (req: Request) => {
+    loginUser: async (req: Request) => {
         const validationResult = LoginSchema.safeParse(req.body)
         if (!validationResult.success) {
             return { success: false, message: "Failed to parse the body" }
@@ -76,11 +73,13 @@ export const DBService = {
             { expiresIn: '1h' }
         );
 
-        return { success: true, token: token}
+        return { success: true, token: token }
 
     },
 
-    get_users: async () => {
+    logoutUser: async () => { },
+
+    getUsers: async () => {
         return prisma.user.findMany();
     }
 }

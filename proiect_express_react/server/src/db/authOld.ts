@@ -33,7 +33,6 @@ const saveRegistryToDisk = async () => {
         const jsonString = JSON.stringify(AccountRegistry, null, 2);
         await fs.writeFile(DB_FILE, jsonString, 'utf-8');
     } catch (error) {
-        console.error("CRITICAL: Failed to write accounts to disk!", error);
     }
 }
 

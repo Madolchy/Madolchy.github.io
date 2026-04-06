@@ -3,7 +3,7 @@ import { AuthService } from "../services/AuthService";
 import { FileManagerService } from "../services/FileUploadService"
 import { useQueryClient } from '@tanstack/react-query';
 
-export default function DragDropZone({ children }) {
+export default function DragDropZone({ children, onDropFiles }) {
     const queryClient = useQueryClient();
 
     const handleDragOver = useCallback((e) => {
@@ -35,10 +35,11 @@ export default function DragDropZone({ children }) {
         });
 
     }, [queryClient]);
+
     return (
         <>
-            <div>
-                {React.cloneElement(children, { handleDragOver, handleDrop })}
+            <div onDragOver={handleDragOver} onDrop={handleDrop}>
+                {children}
             </div>
         </>
     )

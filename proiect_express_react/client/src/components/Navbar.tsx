@@ -1,6 +1,14 @@
+import { useState } from "react"
 import "./Navbar.css"
+import { apiClient } from "../client/apiClient"
+import { AuthService } from "../services/AuthService"
 
 export default function Navbar() {
+    const [username] = useState(AuthService.getToken()?.substring(0,30)) // Hai sa zicem ca utilizatorul vrea sa fie annonim si ii afisat doar uuid! cine stie ce perfereinte are!
+
+
+
+
     return (
         <>
             <nav className="navbar navbar-expand-lg bg-body-tertiary">
@@ -30,6 +38,9 @@ export default function Navbar() {
                             </li>
                             <li className="nav-item">
                                 <a className="nav-link disabled" aria-disabled="true">Disabled</a>
+                            </li>
+                            <li className="nav-item">
+                                <a className="nav-link disabled" aria-disabled="true">Salut {username} </a>
                             </li>
                         </ul>
 
