@@ -1,0 +1,8 @@
+.dynamic-grid-container {
+    display: grid;
+    grid-template-columns: repeat(var(--box-count), var(--box-width));
+    grid-auto-rows: var(--box-height); 
+    overflow: hidden;
+    align-content: start;
+    justify-content: start;
+}

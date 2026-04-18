@@ -1,0 +1,30 @@
+.nav-gear-icon {
+    margin-right: 1.5rem;
+}
+
+/* Ensure the icon feels clickable */
+.gear-hover-icon {
+    cursor: pointer;
+}
+
+/* 1. Setup the Filled Gear to be invisible by default */
+.gear-hover-icon .gear-filled {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* 2. Setup the Hollow Gear to be visible by default */
+.gear-hover-icon .gear-hollow {
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* 3. When the SVG is hovered, fade IN the filled gear */
+.gear-hover-icon:hover .gear-filled {
+    opacity: 1;
+}
+
+/* 4. When the SVG is hovered, fade OUT the hollow gear */
+.gear-hover-icon:hover .gear-hollow {
+    opacity: 0;
+}
