@@ -1,85 +1,29 @@
-import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useRef, useMemo } from 'react';
 import DesktopIcon from './DesktopIcon';
 import "./DesktopGrid.css";
-import { FileManagerService } from '../services/FileUploadService';
 
-type BoxSize = {
-    width: number;
-    height: number;
-}
+import { useGrid } from '../hooks/useGrid';
+import { useDesktopIcons } from '../hooks/useDesktopIcons';
 
 export default function DesktopGrid({ handleDrop, handleDragOver }) {
-    const queryClient = useQueryClient();
-
+    const [boxNumberPerRow, setBoxNumberPerRow] = useState(16);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const draggedBoxRef = useRef<number | undefined>(undefined);
+    const { gridData, isLoading, isError, handleSelect, handleSwap } = useDesktopIcons();
 
-    const [boxNumberPerRow, setBoxNumberPerRow] = useState(16);
-    const [boxSize, setBoxSize] = useState<BoxSize>({ width: 0, height: 0 });
+    const boxSize = useGrid(containerRef, boxNumberPerRow, isLoading);
 
-    const { data: gridData, isLoading, isError } = useQuery({
-        queryKey: ['desktopIcons'],
-        queryFn: () => FileManagerService.getUserDesktop() ,
-        initialData: {} as Record<number, any>,
-        staleTime: Infinity,
-    });
+    const items = useMemo(() => {
+        if (!gridData) return [];
 
-    const handleSelect = useCallback((index: number) => {
-        draggedBoxRef.current = index;
-    }, []);
-
-    const handleSwap = useCallback((newPosition: number) => {
-        const sourceIndex = draggedBoxRef.current;
-        draggedBoxRef.current = undefined; // Reset ref immediately
-
-        if (sourceIndex === undefined || sourceIndex === newPosition) return;
-
-        // Optimistic UI Update
-        queryClient.setQueryData(['desktopIcons'], (oldData: any) => {
-            if (!oldData) return oldData;
-
-            const newData = { ...oldData };
-
-            const sourceItem = newData[sourceIndex];
-            const targetItem = newData[newPosition];
-
-            if (!sourceItem) return oldData;
-
-            if (targetItem) {
-                newData[sourceIndex] = targetItem;
-            } else {
-                delete newData[sourceIndex];
-            }
-            newData[newPosition] = sourceItem;
-
-            return newData;
-        });
-    }, [queryClient]);
-
-    useLayoutEffect(() => {
-        const calculateCapacity = () => {
-            if (!containerRef.current) return;
-            const { clientWidth, clientHeight } = containerRef.current;
-            if (clientWidth === 0 || clientHeight === 0) return;
-
-            const boxWidth = clientWidth / boxNumberPerRow;
-            const boxHeight = clientHeight / boxNumberPerRow;
-
-            setBoxSize({ width: boxWidth, height: boxHeight });
-        };
-
-        calculateCapacity();
-        const observer = new ResizeObserver(calculateCapacity);
-        if (containerRef.current) observer.observe(containerRef.current);
-        return () => observer.disconnect();
-    }, [boxNumberPerRow, isLoading]);
+        const gridArray = Array.from({ length: boxNumberPerRow * boxNumberPerRow });
+        gridData.forEach((element) => { gridArray[element.cell] = element; });
+        
+        return gridArray;
+    }, [gridData, boxNumberPerRow]);
 
     if (isLoading) return <div>Loading Desktop...</div>;
     if (isError || !gridData) return <div>Failed to load icons!</div>;
-
-    const items = Array.from({ length: boxNumberPerRow * boxNumberPerRow });
 
     return (
         <div
@@ -91,15 +35,13 @@ export default function DesktopGrid({ handleDrop, handleDragOver }) {
                 '--box-count': boxNumberPerRow
             } as React.CSSProperties}
         >
-            {items.map((_, index) => (
+            {items.map((data, index) => (
                 <DesktopIcon
                     key={index}
                     id={index}
-                    data={gridData[index]}
-                    
+                    data={data}
                     onMouseDownCallback={handleSelect}
                     onMouseUpCallback={handleSwap}
-
                     handleDrop={handleDrop}
                     handleDragOver={handleDragOver}
                 />

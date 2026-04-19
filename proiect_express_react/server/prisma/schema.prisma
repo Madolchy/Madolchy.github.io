@@ -27,10 +27,11 @@ model User {
 }
 
 model DesktopIcon {
-  id       String @id @default(uuid())
-  filename String
-  bytes    Int
-  cell     Int
+  id        String @id @default(uuid())
+  filename  String
+  file_type String
+  bytes     Int
+  cell      Int
 
   user   User @relation(fields: [userId], references: [id])
   userId Int

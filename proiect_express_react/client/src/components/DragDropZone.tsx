@@ -22,7 +22,7 @@ export default function DragDropZone({ children }) {
         if (!token) return;
 
         const file = e.dataTransfer.files[0];
-        const metadata = await FileManagerService.uploadFile(token, file, idx)
+        const metadata = await FileManagerService.uploadFile(file, idx)
 
         if (!metadata) {
             console.log("Failed to upload file :C :C :C: C: :C: ")
@@ -31,7 +31,7 @@ export default function DragDropZone({ children }) {
 
         queryClient.setQueryData(['desktopIcons'], (oldData: any) => {
             if (!oldData) return oldData;
-            return { ...oldData, [idx]: metadata };
+            return [...oldData, metadata];
         });
 
     }, [queryClient]);

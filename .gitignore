@@ -147,3 +147,4 @@ yarn.lock
 proiect/*
 proiect_express_react - Copy/*
 proiect_elysia/*
+proiect_express_react/server/uploads/*

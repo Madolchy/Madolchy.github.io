@@ -24,23 +24,20 @@ const typeToIcon: Record<string, React.ComponentType> = {
 };
 
 const DesktopIcon = React.memo(({ id, data, onMouseUpCallback, onMouseDownCallback, handleDrop, handleDragOver }: any) => {
-    const IconComponent = typeToIcon[data?.type] || EmptyIcon
+    const IconComponent = typeToIcon[data?.file_type] || EmptyIcon
 
     return (
         <div
             id={`icon-${id}`}
             className="position-relative text-black bg-transparent d-flex align-items-center justify-content-center"
-            // 1. Tell the browser this element isn't for native dragging
             draggable={false}
             style={{
                 userSelect: 'none',
-                // 2. Helps the browser understand this is a custom interaction
                 touchAction: 'none',
                 cursor: data ? 'grab' : 'default'
             }}
             onMouseDown={() => onMouseDownCallback(id)}
             onMouseUp={() => onMouseUpCallback(id)}
-            // 3. Keep this as a backup for older browsers
             onDragStart={(e) => e.preventDefault()}
             
             onDrop={(e) => handleDrop(e, id)}

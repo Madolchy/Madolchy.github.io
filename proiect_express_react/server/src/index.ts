@@ -62,33 +62,51 @@ app.post('/api/upload', requireAuth, uploadService.single('myFile'), async (req:
         return res.status(400).json({ success: false, message: "No file upload" })
     }
 
-    const uuid = req.auth.uuid; 
+    const uuid = req.auth.id; 
     const cell = parseInt(req.body.index, 10);
 
     const metadata = {
         filename: file.originalname,
+        file_type: file.mimetype,
         bytes: file.size,
         cell: cell,
-        type: file.mimetype,
     }
 
     const result = await FileManagerService.register_file(uuid, metadata)
-    if (result.success) {
-        return res.status(200).json({})
+    if (result.success && result.data) {
+        return res.status(200).json(result.data)
     }
     else {
+        console.log(result)
         return res.status(400).json({})
     }
 })
 
+app.post('/api/desktop/swap', requireAuth, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+
+    const { first, second } = req.body;
+
+    const result = await FileManagerService.swap_items(first, second, uuid);
+    console.log(result)
+    if (result.success) {
+        return res.status(200).json({});
+    }
+
+    return res.status(400).json({});
+})
+
 app.get('/api/desktop', requireAuth, async (req: Request, res: Response) => {
-    const uuid = req.auth.uuid; 
+    const uuid = req.auth.id; 
+    console.log(uuid)
     const items = await FileManagerService.getUserDesktop(uuid);
+    if (!items) {
+        res.status(400).json({})
+    }
 
-    console.log(items)
+    res.status(200).json(items)
 
 
-    return 200
 })
 
 app.post("/api/db", async (req: Request, res: Response) => {

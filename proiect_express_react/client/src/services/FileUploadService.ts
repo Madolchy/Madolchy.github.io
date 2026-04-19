@@ -6,7 +6,9 @@ export const FileManagerService = {
         try {
             const response = await apiClient.get('desktop')
             if (response.ok) {
-                return await response.json();
+                const data = await response.json()
+                console.log("Got response: ", data)
+                return data;
             }
         }
         catch (error) {

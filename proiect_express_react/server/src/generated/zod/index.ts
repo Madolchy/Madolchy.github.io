@@ -14,7 +14,7 @@ export const TransactionIsolationLevelSchema = z.enum(['Serializable']);
 
 export const UserScalarFieldEnumSchema = z.enum(['id','name','email','password_hash','uuid']);
 
-export const DesktopIconScalarFieldEnumSchema = z.enum(['id','filename','bytes','cell','userId']);
+export const DesktopIconScalarFieldEnumSchema = z.enum(['id','filename','file_type','bytes','cell','userId']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 /////////////////////////////////////////
@@ -42,6 +42,7 @@ export type User = z.infer<typeof UserSchema>
 export const DesktopIconSchema = z.object({
   id: z.uuid(),
   filename: z.string(),
+  file_type: z.string(),
   bytes: z.number().int(),
   cell: z.number().int(),
   userId: z.number().int(),
@@ -99,6 +100,7 @@ export const DesktopIconArgsSchema: z.ZodType<Prisma.DesktopIconDefaultArgs> = z
 export const DesktopIconSelectSchema: z.ZodType<Prisma.DesktopIconSelect> = z.object({
   id: z.boolean().optional(),
   filename: z.boolean().optional(),
+  file_type: z.boolean().optional(),
   bytes: z.boolean().optional(),
   cell: z.boolean().optional(),
   userId: z.boolean().optional(),
@@ -201,6 +203,7 @@ export const DesktopIconWhereInputSchema: z.ZodType<Prisma.DesktopIconWhereInput
   NOT: z.union([ z.lazy(() => DesktopIconWhereInputSchema), z.lazy(() => DesktopIconWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   filename: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  file_type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   bytes: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   cell: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   userId: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
@@ -210,6 +213,7 @@ export const DesktopIconWhereInputSchema: z.ZodType<Prisma.DesktopIconWhereInput
 export const DesktopIconOrderByWithRelationInputSchema: z.ZodType<Prisma.DesktopIconOrderByWithRelationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   filename: z.lazy(() => SortOrderSchema).optional(),
+  file_type: z.lazy(() => SortOrderSchema).optional(),
   bytes: z.lazy(() => SortOrderSchema).optional(),
   cell: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
@@ -252,6 +256,7 @@ export const DesktopIconWhereUniqueInputSchema: z.ZodType<Prisma.DesktopIconWher
   OR: z.lazy(() => DesktopIconWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => DesktopIconWhereInputSchema), z.lazy(() => DesktopIconWhereInputSchema).array() ]).optional(),
   filename: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  file_type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   bytes: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   cell: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   userId: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
@@ -261,6 +266,7 @@ export const DesktopIconWhereUniqueInputSchema: z.ZodType<Prisma.DesktopIconWher
 export const DesktopIconOrderByWithAggregationInputSchema: z.ZodType<Prisma.DesktopIconOrderByWithAggregationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   filename: z.lazy(() => SortOrderSchema).optional(),
+  file_type: z.lazy(() => SortOrderSchema).optional(),
   bytes: z.lazy(() => SortOrderSchema).optional(),
   cell: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
@@ -277,6 +283,7 @@ export const DesktopIconScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.D
   NOT: z.union([ z.lazy(() => DesktopIconScalarWhereWithAggregatesInputSchema), z.lazy(() => DesktopIconScalarWhereWithAggregatesInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   filename: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  file_type: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   bytes: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   cell: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   userId: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
@@ -342,6 +349,7 @@ export const UserUncheckedUpdateManyInputSchema: z.ZodType<Prisma.UserUncheckedU
 export const DesktopIconCreateInputSchema: z.ZodType<Prisma.DesktopIconCreateInput> = z.strictObject({
   id: z.uuid().optional(),
   filename: z.string(),
+  file_type: z.string(),
   bytes: z.number().int(),
   cell: z.number().int(),
   user: z.lazy(() => UserCreateNestedOneWithoutIconsInputSchema),
@@ -350,6 +358,7 @@ export const DesktopIconCreateInputSchema: z.ZodType<Prisma.DesktopIconCreateInp
 export const DesktopIconUncheckedCreateInputSchema: z.ZodType<Prisma.DesktopIconUncheckedCreateInput> = z.strictObject({
   id: z.uuid().optional(),
   filename: z.string(),
+  file_type: z.string(),
   bytes: z.number().int(),
   cell: z.number().int(),
   userId: z.number().int(),
@@ -358,6 +367,7 @@ export const DesktopIconUncheckedCreateInputSchema: z.ZodType<Prisma.DesktopIcon
 export const DesktopIconUpdateInputSchema: z.ZodType<Prisma.DesktopIconUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   filename: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  file_type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   bytes: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   cell: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   user: z.lazy(() => UserUpdateOneRequiredWithoutIconsNestedInputSchema).optional(),
@@ -366,6 +376,7 @@ export const DesktopIconUpdateInputSchema: z.ZodType<Prisma.DesktopIconUpdateInp
 export const DesktopIconUncheckedUpdateInputSchema: z.ZodType<Prisma.DesktopIconUncheckedUpdateInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   filename: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  file_type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   bytes: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   cell: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   userId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
@@ -374,6 +385,7 @@ export const DesktopIconUncheckedUpdateInputSchema: z.ZodType<Prisma.DesktopIcon
 export const DesktopIconCreateManyInputSchema: z.ZodType<Prisma.DesktopIconCreateManyInput> = z.strictObject({
   id: z.uuid().optional(),
   filename: z.string(),
+  file_type: z.string(),
   bytes: z.number().int(),
   cell: z.number().int(),
   userId: z.number().int(),
@@ -382,6 +394,7 @@ export const DesktopIconCreateManyInputSchema: z.ZodType<Prisma.DesktopIconCreat
 export const DesktopIconUpdateManyMutationInputSchema: z.ZodType<Prisma.DesktopIconUpdateManyMutationInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   filename: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  file_type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   bytes: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   cell: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 });
@@ -389,6 +402,7 @@ export const DesktopIconUpdateManyMutationInputSchema: z.ZodType<Prisma.DesktopI
 export const DesktopIconUncheckedUpdateManyInputSchema: z.ZodType<Prisma.DesktopIconUncheckedUpdateManyInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   filename: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  file_type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   bytes: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   cell: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   userId: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
@@ -512,6 +526,7 @@ export const DesktopIconUserIdCellCompoundUniqueInputSchema: z.ZodType<Prisma.De
 export const DesktopIconCountOrderByAggregateInputSchema: z.ZodType<Prisma.DesktopIconCountOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   filename: z.lazy(() => SortOrderSchema).optional(),
+  file_type: z.lazy(() => SortOrderSchema).optional(),
   bytes: z.lazy(() => SortOrderSchema).optional(),
   cell: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
@@ -526,6 +541,7 @@ export const DesktopIconAvgOrderByAggregateInputSchema: z.ZodType<Prisma.Desktop
 export const DesktopIconMaxOrderByAggregateInputSchema: z.ZodType<Prisma.DesktopIconMaxOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   filename: z.lazy(() => SortOrderSchema).optional(),
+  file_type: z.lazy(() => SortOrderSchema).optional(),
   bytes: z.lazy(() => SortOrderSchema).optional(),
   cell: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
@@ -534,6 +550,7 @@ export const DesktopIconMaxOrderByAggregateInputSchema: z.ZodType<Prisma.Desktop
 export const DesktopIconMinOrderByAggregateInputSchema: z.ZodType<Prisma.DesktopIconMinOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   filename: z.lazy(() => SortOrderSchema).optional(),
+  file_type: z.lazy(() => SortOrderSchema).optional(),
   bytes: z.lazy(() => SortOrderSchema).optional(),
   cell: z.lazy(() => SortOrderSchema).optional(),
   userId: z.lazy(() => SortOrderSchema).optional(),
@@ -685,6 +702,7 @@ export const NestedStringWithAggregatesFilterSchema: z.ZodType<Prisma.NestedStri
 export const DesktopIconCreateWithoutUserInputSchema: z.ZodType<Prisma.DesktopIconCreateWithoutUserInput> = z.strictObject({
   id: z.uuid().optional(),
   filename: z.string(),
+  file_type: z.string(),
   bytes: z.number().int(),
   cell: z.number().int(),
 });
@@ -692,6 +710,7 @@ export const DesktopIconCreateWithoutUserInputSchema: z.ZodType<Prisma.DesktopIc
 export const DesktopIconUncheckedCreateWithoutUserInputSchema: z.ZodType<Prisma.DesktopIconUncheckedCreateWithoutUserInput> = z.strictObject({
   id: z.uuid().optional(),
   filename: z.string(),
+  file_type: z.string(),
   bytes: z.number().int(),
   cell: z.number().int(),
 });
@@ -727,6 +746,7 @@ export const DesktopIconScalarWhereInputSchema: z.ZodType<Prisma.DesktopIconScal
   NOT: z.union([ z.lazy(() => DesktopIconScalarWhereInputSchema), z.lazy(() => DesktopIconScalarWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   filename: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  file_type: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   bytes: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   cell: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   userId: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
@@ -781,6 +801,7 @@ export const UserUncheckedUpdateWithoutIconsInputSchema: z.ZodType<Prisma.UserUn
 export const DesktopIconCreateManyUserInputSchema: z.ZodType<Prisma.DesktopIconCreateManyUserInput> = z.strictObject({
   id: z.uuid().optional(),
   filename: z.string(),
+  file_type: z.string(),
   bytes: z.number().int(),
   cell: z.number().int(),
 });
@@ -788,6 +809,7 @@ export const DesktopIconCreateManyUserInputSchema: z.ZodType<Prisma.DesktopIconC
 export const DesktopIconUpdateWithoutUserInputSchema: z.ZodType<Prisma.DesktopIconUpdateWithoutUserInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   filename: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  file_type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   bytes: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   cell: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 });
@@ -795,6 +817,7 @@ export const DesktopIconUpdateWithoutUserInputSchema: z.ZodType<Prisma.DesktopIc
 export const DesktopIconUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.DesktopIconUncheckedUpdateWithoutUserInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   filename: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  file_type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   bytes: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   cell: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 });
@@ -802,6 +825,7 @@ export const DesktopIconUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.
 export const DesktopIconUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Prisma.DesktopIconUncheckedUpdateManyWithoutUserInput> = z.strictObject({
   id: z.union([ z.uuid(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   filename: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  file_type: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   bytes: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   cell: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
 });
