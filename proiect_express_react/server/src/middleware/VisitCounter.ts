@@ -12,4 +12,5 @@ export const VisitCounter = (req: Request, res: Response, next: NextFunction) =>
     req.visitCounts = visits;
     next();
 
+    
 }
