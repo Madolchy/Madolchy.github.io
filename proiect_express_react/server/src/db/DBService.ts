@@ -1,9 +1,9 @@
 import type { Request, Response } from 'express';
 import z, { success } from 'zod';
 import bcrypt from "bcrypt";
-import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../client/prisma.js';
+import { AuthService } from '../services/AuthService.js';
 
 export const SignupRequestSchema = z.object({
     name: z.string().min(2),
@@ -67,13 +67,10 @@ export const DBService = {
             return { succes: false, message: "Invalid email or password" }
         }
 
-        const token = jwt.sign(
-            { id: user.uuid },
-            process.env.JWT_SECRET as jwt.PrivateKey,
-            { expiresIn: '1h' }
-        );
+        const token = AuthService.generateToken({ id: user.uuid });
+        const refreshToken = AuthService.generateRefreshToken({ id: user.uuid });
 
-        return { success: true, token: token }
+        return { success: true, token: token, refreshToken: refreshToken }
 
     },
 

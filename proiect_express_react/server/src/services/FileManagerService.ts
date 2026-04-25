@@ -26,7 +26,7 @@ export const FileManagerService = {
         const data = validData.data;
 
         try {
-            await prisma.desktopIcon.create({
+            const result = await prisma.desktopIcon.create({
                 data: {
                     ...data,
                     user: {
@@ -36,12 +36,13 @@ export const FileManagerService = {
                     }
                 }
             })
+            return { success: true, data: result}
+            
         }
         catch (e) {
             return { success: false, message: "Failed to create the desktop icon", error: e }
         }
 
-        return { success: true, data: data }
     },
 
     getUserDesktop: async (uuid) => {
@@ -65,7 +66,6 @@ export const FileManagerService = {
 
 
     swap_items: async (firstCellPayload, secondCellPayload, userUuid) => {
-        // 1. Validate payloads (assuming cellSchema now validates integers)
         const [validFirst, validSecond] = [
             cellSchema.safeParse(firstCellPayload),
             cellSchema.safeParse(secondCellPayload)
@@ -122,7 +122,7 @@ export const FileManagerService = {
                 }
             });
 
-            return { success: true, message: "Action completed successfully" };
+            return { success: true, data: {}};
 
         } catch (error) {
             console.error("Move/Swap transaction failed:", error);

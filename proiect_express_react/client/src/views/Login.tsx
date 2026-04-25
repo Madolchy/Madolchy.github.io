@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { AuthService } from '../services/AuthService';
 
 const LoginSchema = z.object({
     email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
@@ -30,7 +31,7 @@ const loginUser = async (credentials: LoginFormInputs) => {
         throw new Error("Backend Error")
     }
 
-    
+
     return data;
 };
 
@@ -38,10 +39,10 @@ export default function Login() {
     const navigate = useNavigate();
 
     // 3. Initialize React Hook Form with Zod
-    const { 
-        register, 
-        handleSubmit, 
-        formState: { errors } 
+    const {
+        register,
+        handleSubmit,
+        formState: { errors }
     } = useForm<LoginFormInputs>({
         resolver: zodResolver(LoginSchema),
         defaultValues: {
@@ -55,9 +56,9 @@ export default function Login() {
         mutationFn: loginUser,
         onSuccess: (data) => {
             if (data.token) {
-                localStorage.setItem('jwt', data.token);
+                AuthService.addToken(data.token);
             }
-            
+
             navigate('/desktop');
         },
     });
@@ -94,12 +95,12 @@ export default function Login() {
                                     <div className="row gy-3 overflow-hidden">
                                         <div className="col-12">
                                             <div className="form-floating mb-1">
-                                                <input 
-                                                    type="email" 
+                                                <input
+                                                    type="email"
                                                     // Add dynamic class if there's an error for standard Bootstrap red styling
-                                                    className={`form-control ${errors.email ? 'is-invalid' : ''}`} 
-                                                    id="email" 
-                                                    placeholder="name@example.com" 
+                                                    className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                                    id="email"
+                                                    placeholder="name@example.com"
                                                     {...register('email')} // Replaces value & onChange
                                                 />
                                                 <label className="form-label" htmlFor="email">Email</label>
@@ -112,11 +113,11 @@ export default function Login() {
 
                                         <div className="col-12 mt-3">
                                             <div className="form-floating mb-1">
-                                                <input 
-                                                    type="password" 
-                                                    className={`form-control ${errors.password ? 'is-invalid' : ''}`} 
-                                                    id="password" 
-                                                    placeholder="Password" 
+                                                <input
+                                                    type="password"
+                                                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                                    id="password"
+                                                    placeholder="Password"
                                                     {...register('password')}
                                                 />
                                                 <label className="form-label" htmlFor="password">Password</label>
@@ -129,10 +130,10 @@ export default function Login() {
 
                                         <div className="col-12 mt-3">
                                             <div className="form-check">
-                                                <input 
-                                                    className="form-check-input" 
-                                                    type="checkbox" 
-                                                    id="rememberMe" 
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id="rememberMe"
                                                     {...register('rememberMe')}
                                                 />
                                                 <label className="form-check-label text-secondary" htmlFor="rememberMe">
@@ -143,9 +144,9 @@ export default function Login() {
 
                                         <div className="col-12 mt-4">
                                             <div className="d-grid">
-                                                <button 
-                                                    className="btn bsb-btn-2xl btn-primary" 
-                                                    type="submit" 
+                                                <button
+                                                    className="btn bsb-btn-2xl btn-primary"
+                                                    type="submit"
                                                     // Disable button if loading or if there are frontend errors
                                                     disabled={loginMutation.isPending}
                                                 >
@@ -155,7 +156,7 @@ export default function Login() {
                                         </div>
                                     </div>
                                 </form>
-                                
+
                                 <div className="row">
                                     <div className="col-12">
                                         <hr className="mt-5 mb-4 border-secondary-subtle" />

@@ -10,6 +10,7 @@ import Desktop from './views/Desktop.tsx';
 import Register from './views/Register.tsx';
 import { Authenticated, Unauthenticated } from './components/Authenticated.tsx';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { BlobProvider } from './context/BlobProvider.tsx';
 
 const queryClient = new QueryClient();
 
@@ -51,7 +52,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <BlobProvider>
+        <RouterProvider router={router} />
+      </BlobProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   </StrictMode>,

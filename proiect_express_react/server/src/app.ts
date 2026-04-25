@@ -2,12 +2,14 @@ import 'dotenv/config';
 
 import express from 'express';
 import type { Request, Response } from 'express';
-import { DBService } from './db/auth.js';
+import { DBService } from './db/DBService.js';
 import { uploadService } from './services/diskStorageService.js';
 import { requireLogin } from './middleware/RequireLogin.js';
 import { FileManagerService } from './services/FileManagerService.js';
 import { VisitCounter } from './middleware/VisitCounter.js';
 import cookieParser from 'cookie-parser';
+import ms from 'ms';
+import { AuthService } from './services/AuthService.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -32,7 +34,6 @@ app.post("/api/register", async (req: Request, res: Response) => {
     return res.status(200).json({
         success: true,
         message: "yay"
-        // token: result.token
     })
 
 })
@@ -47,9 +48,43 @@ app.post("/api/login", async (req: Request, res: Response) => {
         })
     }
 
+    if (result.refreshToken) {
+        res.cookie('refreshToken', result.refreshToken, {
+            httpOnly: true,
+            secure: false, // change this for prod ofc
+            sameSite: 'strict',
+            maxAge: ms('7d')
+        });
+    }
+
     return res.status(200).json({
         success: true,
         token: result.token
+    })
+})
+
+app.post("/api/refresh", async (req: Request, res: Response) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        return res.status(401).json({
+            success: false,
+            message: "No refresh token provided"
+        })
+    }
+
+    const decoded = AuthService.verifyToken(refreshToken);
+    if (!decoded) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid refresh token"
+        })
+    }
+
+    const token = AuthService.generateToken({ id: decoded.id });
+    return res.status(200).json({
+        success: true,
+        token: token
     })
 })
 
@@ -62,6 +97,8 @@ app.post("/api/logout", requireLogin, async (req: Request, res: Response) => {
             message: "Logout failed somehow"
         })
     }
+
+    res.clearCookie('refreshToken');
 
     return res.status(200).json({
         success: true,
@@ -76,7 +113,7 @@ app.post('/api/upload', requireLogin, uploadService.single('myFile'), async (req
         return res.status(400).json({ success: false, message: "No file upload" })
     }
 
-    const uuid = req.auth.id; 
+    const uuid = req.auth.id;
     const cell = parseInt(req.body.index, 10);
 
     const metadata = {
@@ -111,13 +148,14 @@ app.post('/api/desktop/swap', requireLogin, async (req: Request, res: Response) 
 })
 
 app.get('/api/desktop', VisitCounter, requireLogin, async (req: Request, res: Response) => {
-    const uuid = req.auth.id; 
+    const uuid = req.auth.id;
     console.log(uuid)
     const items = await FileManagerService.getUserDesktop(uuid);
     if (!items) {
         res.status(400).json({})
     }
 
+    console.log(items)
     res.status(200).json(items)
 
 

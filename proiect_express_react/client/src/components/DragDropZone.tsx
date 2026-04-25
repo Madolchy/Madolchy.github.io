@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { AuthService } from "../services/AuthService";
-import { FileManagerService } from "../services/FileUploadService"
+import { FileManagerService } from "../services/FileManagerService"
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function DragDropZone({ children, onDropFiles }) {

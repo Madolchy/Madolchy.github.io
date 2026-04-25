@@ -19,6 +19,10 @@ export const AuthService = {
 
     },
 
+    addToken: (token: string) => {
+        localStorage.setItem('jwt', token);
+    },
+
     removeToken: () => {
         localStorage.removeItem('jwt')
     }

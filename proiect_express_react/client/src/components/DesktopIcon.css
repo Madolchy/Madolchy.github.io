@@ -1,24 +1,31 @@
 .icon-highlight {
     position: absolute;
     inset: 0px; 
-    border-radius: 4px;
     pointer-events: none; 
     z-index: 1;
 
-    /* 1. THE TEXTURE */
-    background-image: url('../assets/78e46b9c-7195-4eab-b69c-7dff06d8e74d.jpg');
+    background-color: rgba(0, 0, 255, 0.2); 
     
-    /* MANDATORY: This forces the large image to shrink into the small icon box */
-    background-size: cover; 
-    background-position: center;
-    background-repeat: no-repeat;
-
-    /* 2. THE SHARP BORDER */
-    /* You had opacity 0 (transparent). Set it to 0.4 or higher to see it! */
-    border: 1px solid rgba(255, 255, 255, 0.4);
-
-    /* 3. OPTIONAL: Add a bit of transparency so it doesn't look like a solid block */
-    /* opacity: 0.8; */
+    border: 2px solid #00008b; 
     
+    border-radius: 8px; 
+
+    background-clip: padding-box; 
     overflow: hidden; 
+}
+
+.icon {
+    width: var(--box-width, 80);
+    height: var(--box-height, 80);
+    object-fit: contain;
+}
+
+.icon-grabbable {
+    user-select: none;
+    touch-action: none;
+    cursor: grab;
+}
+
+.native-drag-none {
+    -webkit-user-drag: none;
 }
