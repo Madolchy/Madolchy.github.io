@@ -4,7 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import './index.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Login from './views/Login.tsx';
 import Desktop from './views/Desktop.tsx';
 import Register from './views/Register.tsx';
@@ -14,7 +14,7 @@ import { BlobProvider } from './context/BlobProvider.tsx';
 
 const queryClient = new QueryClient();
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: '/',
     element: (

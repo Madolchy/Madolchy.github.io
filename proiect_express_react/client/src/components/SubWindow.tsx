@@ -4,7 +4,7 @@ import { useBlob } from '../context/BlobContext';
 
 export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData, onClose, onBringToFront }) {
     const { getUrl } = useBlob();
-    const { title, zIndex, data, id } = windowData; 
+    const { title, zIndex, data, id } = windowData;
 
     const imgUrl = (() => {
         if (!data?.thumbnail || !data?.id) return null;
@@ -12,7 +12,7 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
     })();
 
     const defaultPosition = React.useMemo(() => ({
-        x: 300, 
+        x: 300,
         y: 400,
         width: 320,
         height: 200
@@ -25,17 +25,17 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
             dragHandleClassName="window-header"
             onDragStart={() => {
                 onBringToFront(id);
-                onDragStart(); 
+                onDragStart();
             }}
             onMouseDown={() => {
                 onBringToFront(id);
             }}
-            style={{ 
-                zIndex, 
-                top: 0, 
-                left: 0, 
+            style={{
+                zIndex,
+                top: 0,
+                left: 0,
                 willChange: 'transform',
-                userSelect: 'none' 
+                userSelect: 'none'
             }}
         >
             <div className="border border-dark bg-white h-100 d-flex flex-column shadow-sm">
@@ -44,7 +44,7 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
                     <button
                         className="btn btn-sm btn-danger p-0 ms-2"
                         style={{ width: '20px', height: '20px', lineHeight: '1' }}
-                        onClick={(e) => { e.stopPropagation(); onClose(id); }} 
+                        onClick={(e) => { e.stopPropagation(); onClose(id); }}
                     >
                         &times;
                     </button>

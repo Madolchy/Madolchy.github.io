@@ -3,9 +3,9 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 const DB_NAME = 'AppDatabase';
 const STORE_NAME = 'thumbnails';
 
-let dbPromise = null;
+let dbPromise: Promise<IDBPDatabase<any>> | null = null;
 
-export async function getDB(): Promise<IDBPDatabase<unknown>> {
+export async function getDB(): Promise<IDBPDatabase<any>> {
     if (!dbPromise) {
         dbPromise = openDB(DB_NAME, 1, {
             upgrade(db) {
@@ -19,7 +19,7 @@ export async function getDB(): Promise<IDBPDatabase<unknown>> {
 }
 
 export const db = {
-    saveThumbnail: async (id, blob) => {
+    saveThumbnail: async (id: string, blob: Blob) => {
         try {
             const db = await getDB();
             await db.put(STORE_NAME, blob, id);
@@ -29,7 +29,7 @@ export const db = {
         }
     },
 
-    getThumbnail: async (id) => {
+    getThumbnail: async (id: string) => {
         try {
             const db = await getDB();
             const blob = await db.get(STORE_NAME, id);
