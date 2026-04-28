@@ -12,7 +12,7 @@ export const AuthService = {
         return jwt.sign(
             { ...payload, tokenType: 'active' },
             JWT_SECRET as jwt.Secret,
-            { expiresIn: '30m' }
+            { expiresIn: '45m' }
         );
     },
 

@@ -6,17 +6,14 @@ export const AuthService = {
         return localStorage.getItem('jwt');
     },
 
-    isTokenValid: () => {
+    hasToken: () => {
         const token = AuthService.getToken();
         if (!token) return false;
 
         const tokenData = jwtDecode(token);
-        if (!tokenData || !tokenData.exp) return false;
-
-        if (tokenData.exp < Date.now() / 1000) return false
+        if (!tokenData) return false;
 
         return true;
-
     },
 
     addToken: (token: string) => {
