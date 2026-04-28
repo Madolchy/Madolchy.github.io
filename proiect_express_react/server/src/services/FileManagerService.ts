@@ -6,8 +6,9 @@ import z from 'zod';
 
 
 const UploadPayloadSchema = z.object({
+    id: z.string().optional(),
     filename: z.string(),
-    file_type: z.string(),
+    fileType: z.string(),
     bytes: z.number().int(),
     cell: z.number().int(),
 });
@@ -18,6 +19,7 @@ const cellSchema = z.number().int().min(0).max(255);
 
 export const FileManagerService = {
     register_file: async (uuid, metadata) => {
+        console.log(metadata)
         const validData = UploadPayloadSchema.safeParse(metadata);
         if (!validData.success) {
             return { success: false, message: "Got a invalid metadata" }
@@ -26,18 +28,26 @@ export const FileManagerService = {
         const data = validData.data;
 
         try {
+            const user = await prisma.user.findUnique({
+                where: { uuid: uuid },
+                select: { id: true }
+            });
+            if (!user) {
+                return { success: false, message: "User not found" };
+            }
+
             const result = await prisma.desktopIcon.create({
                 data: {
-                    ...data,
-                    user: {
-                        connect: {
-                            uuid: uuid
-                        }
-                    }
+                    id: data.id,
+                    filename: data.filename,
+                    fileType: data.fileType,
+                    bytes: data.bytes,
+                    cell: data.cell,
+                    userId: user.id
                 }
             })
-            return { success: true, data: result}
-            
+            return { success: true, data: result }
+
         }
         catch (e) {
             return { success: false, message: "Failed to create the desktop icon", error: e }
@@ -47,11 +57,15 @@ export const FileManagerService = {
 
     getUserDesktop: async (uuid) => {
         try {
+            const user = await prisma.user.findUnique({
+                where: { uuid: uuid },
+                select: { id: true }
+            });
+            if (!user) return [];
+
             const icons = await prisma.desktopIcon.findMany({
                 where: {
-                    user: {
-                        uuid: uuid
-                    }
+                    userId: user.id
                 }
             })
 
@@ -79,50 +93,51 @@ export const FileManagerService = {
         const secondCell = validSecond.data;
 
         try {
-            await prisma.$transaction(async (tx) => {
-                const user = await tx.user.findUniqueOrThrow({
-                    where: { uuid: userUuid },
-                    select: { id: true }
-                });
-                const userId = user.id;
+            const user = await prisma.user.findUnique({
+                where: { uuid: userUuid },
+                select: { id: true }
+            });
+            if (!user) {
+                return { success: false, message: "User not found" };
+            }
+            const userId = user.id;
 
-                const icon1 = await tx.desktopIcon.findUnique({
-                    where: { userId_cell: { userId, cell: firstCell } }
-                });
-                const icon2 = await tx.desktopIcon.findUnique({
-                    where: { userId_cell: { userId, cell: secondCell } }
-                });
-
-                if (!icon1) {
-                    throw new Error("Source icon does not exist.");
-                }
-
-                if (!icon2) {
-                    await tx.desktopIcon.update({
-                        where: { id: icon1.id },
-                        data: { cell: secondCell }
-                    });
-                } else {
-                    const tempCell = -Math.floor(Math.random() * 1000000) - 1;
-
-                    await tx.desktopIcon.update({
-                        where: { id: icon1.id },
-                        data: { cell: tempCell }
-                    });
-
-                    await tx.desktopIcon.update({
-                        where: { id: icon2.id },
-                        data: { cell: firstCell } // Use firstCell directly
-                    });
-
-                    await tx.desktopIcon.update({
-                        where: { id: icon1.id },
-                        data: { cell: secondCell } // Use secondCell directly
-                    });
-                }
+            const icon1 = await prisma.desktopIcon.findFirst({
+                where: { userId: userId, cell: firstCell }
+            });
+            const icon2 = await prisma.desktopIcon.findFirst({
+                where: { userId: userId, cell: secondCell }
             });
 
-            return { success: true, data: {}};
+            if (!icon1) {
+                return { success: false, message: "Source icon does not exist." };
+            }
+
+            if (!icon2) {
+                await prisma.desktopIcon.update({
+                    where: { id: icon1.id },
+                    data: { cell: secondCell }
+                });
+            } else {
+                const tempCell = -Math.floor(Math.random() * 1000000) - 1;
+
+                await prisma.desktopIcon.update({
+                    where: { id: icon1.id },
+                    data: { cell: tempCell }
+                });
+
+                await prisma.desktopIcon.update({
+                    where: { id: icon2.id },
+                    data: { cell: firstCell }
+                });
+
+                await prisma.desktopIcon.update({
+                    where: { id: icon1.id },
+                    data: { cell: secondCell }
+                });
+            }
+
+            return { success: true, data: {} };
 
         } catch (error) {
             console.error("Move/Swap transaction failed:", error);

@@ -1,13 +1,14 @@
-import { EmptyIcon, PictureSVG } from "../assets/svgs";
+import { EmptyIcon, PictureSVG, TxtSvg } from "../assets/svgs";
 
 const typeToIcon: Record<string, React.ComponentType> = {
+    'text/plain': TxtSvg,
     'image/png': PictureSVG,
     'image/jpeg': PictureSVG,
-    'default': EmptyIcon 
+    'default': EmptyIcon
 };
 
-export const FileIconFactory = ({fileType}: {fileType: string}) => {
+export const FileIconFactory = ({ fileType }: { fileType: string }) => {
     const IconComponent = typeToIcon[fileType || ''] || typeToIcon['default'];
-    
+
     return <IconComponent />;
 };

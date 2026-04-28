@@ -31,12 +31,16 @@ export function useDesktopIcons() {
             setDraggedBox(undefined)
     }, [])
 
-    const handleSelect = useCallback((index: number) => {
+    const handleSelect = useCallback((index: number, uuid: string) => {
         if (draggedBoxRef.current === index) return;
+        if (!uuid) {
+            resetSelect();
+            return;
+        }
 
         draggedBoxRef.current = index;
         setDraggedBox(index);
-    }, []);
+    }, [resetSelect]);
 
     // use tanstack mutate later
     // bug: if you try to swap empty space with a icon space, the swap happens locally but server refreshes correct one later.

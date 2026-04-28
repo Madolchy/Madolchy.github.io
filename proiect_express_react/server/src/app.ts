@@ -10,6 +10,9 @@ import { VisitCounter } from './middleware/VisitCounter.js';
 import cookieParser from 'cookie-parser';
 import ms from 'ms';
 import { AuthService } from './services/AuthService.js';
+import path from 'node:path';
+import fs from 'fs'
+ 
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -117,8 +120,9 @@ app.post('/api/upload', requireLogin, uploadService.single('myFile'), async (req
     const cell = parseInt(req.body.index, 10);
 
     const metadata = {
+        id: path.parse(file.filename).name,
         filename: file.originalname,
-        file_type: file.mimetype,
+        fileType: file.mimetype,
         bytes: file.size,
         cell: cell,
     }
@@ -152,13 +156,39 @@ app.get('/api/desktop', VisitCounter, requireLogin, async (req: Request, res: Re
     console.log(uuid)
     const items = await FileManagerService.getUserDesktop(uuid);
     if (!items) {
-        res.status(400).json({})
+        return res.status(400).json({})
     }
 
     console.log(items)
-    res.status(200).json(items)
+    return res.status(200).json(items)
 
 
+})
+
+app.get('/api/download/:filename', requireLogin, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+    const fileId = path.basename(req.params.filename);
+
+    try {
+        const userDir = path.join(process.cwd(), 'uploads', uuid);
+
+        if (!fs.existsSync(userDir)) {
+            return res.status(404).json({ message: "User directory not found" });
+        }
+
+        const files = fs.readdirSync(userDir);
+        const actualFile = files.find(f => path.parse(f).name === fileId);
+
+        if (!actualFile) {
+            return res.status(404).json({ message: "File not found" });
+        }
+
+        const filePath = path.join(userDir, actualFile);
+        res.sendFile(filePath);
+    } catch (error) {
+        console.error("Download error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
 })
 
 app.post("/api/db", async (req: Request, res: Response) => {

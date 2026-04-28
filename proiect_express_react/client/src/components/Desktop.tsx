@@ -8,26 +8,30 @@ import { useDesktopIcons } from '../hooks/useDesktopIcons';
 import { useWindowManager } from '../hooks/useWindowManager';
 
 import { GridContainer } from './GridContainer';
+import ContextMenu from './ContextMenu';
+import { useContextMenu } from '../hooks/useContextMenu';
 
 export default function Desktop({ onCellDrop }) {
     const [boxNumberPerRow] = useState(16);
     const { gridData, draggedBox, isLoading, isError, resetSelect, handleSelect, handleSwap } = useDesktopIcons();
     const { boxSize, containerRef, actualColumns } = useGrid(boxNumberPerRow, isLoading);
     const { windows, openWindow, closeWindow, bringToFront } = useWindowManager();
-
+    const { contextActiveId, contextPosition, openContext} = useContextMenu();
 
     if (isLoading) return <div>Loading Desktop...</div>;
     if (isError || !gridData) return <div>Failed to load icons!</div>;
 
     return (
+
         <>
-            <GridContainer
-                ref={containerRef}
-                boxSize={boxSize}
+            <GridContainer 
+                ref={containerRef} 
+                boxSize={boxSize} 
                 actualColumns={actualColumns}
+                onContextMenu={(e) => e.preventDefault()}
             >
-                {gridData.map((data, index) => (
-                    <DesktopIcon
+                {gridData.map((data, index) => ( 
+                    <DesktopIcon // din cauza ca e memo, orice functie trimisa trebuie sa fie wrapped in useCallback
                         key={data?.id || index}
                         id={index}
                         data={data}
@@ -36,9 +40,16 @@ export default function Desktop({ onCellDrop }) {
                         onMouseUpCallback={handleSwap}
                         onCellDrop={onCellDrop}
                         onDoubleClick={openWindow}
+                        onContextMenu={openContext}
+                        
                     />
+
+                    
+                    
                 ))}
             </GridContainer>
+            
+            <ContextMenu isActive={contextActiveId !== null} position={contextPosition}/>
 
             {windows.map(win => (
                 <SubWindow

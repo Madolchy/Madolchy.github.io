@@ -35,7 +35,7 @@ export const DBService = {
 
         try {
             await prisma.user.create({
-                data: { ...publicValidData, password_hash: pwHash, uuid: uuid }
+                data: { ...publicValidData, passwordHash: pwHash, uuid: uuid }
             })
         }
         catch (e) {
@@ -62,7 +62,7 @@ export const DBService = {
             return { success: false, message: "Invalid email or password" }
         }
 
-        const isCorrectPassword = await bcrypt.compare(password, user.password_hash)
+        const isCorrectPassword = await bcrypt.compare(password, user.passwordHash)
         if (!isCorrectPassword) {
             return { succes: false, message: "Invalid email or password" }
         }

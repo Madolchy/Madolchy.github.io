@@ -4,7 +4,7 @@
   "type": "module",
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.7.0",
-    "@prisma/client": "^7.7.0",
+    "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "express": "^5.2.1",
@@ -27,7 +27,7 @@
     "@types/sqlite3": "^3.1.11",
     "dotenv": "^17.4.2",
     "nodemon": "^3.1.14",
-    "prisma": "^7.7.0",
+    "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",

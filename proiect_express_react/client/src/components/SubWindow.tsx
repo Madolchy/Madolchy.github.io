@@ -1,15 +1,11 @@
 import React from 'react';
 import { Rnd } from 'react-rnd';
 import { useBlob } from '../context/BlobContext';
+import { FileManagerService } from '../services/FileManagerService';
+import { FileFactory } from './FileFactory';
 
 export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData, onClose, onBringToFront }) {
-    const { getUrl } = useBlob();
     const { title, zIndex, data, id } = windowData;
-
-    const imgUrl = (() => {
-        if (!data?.thumbnail || !data?.id) return null;
-        return getUrl(data.id, data.thumbnail);
-    })();
 
     const defaultPosition = React.useMemo(() => ({
         x: 300,
@@ -37,6 +33,8 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
                 willChange: 'transform',
                 userSelect: 'none'
             }}
+
+            // enableUserSelectHack={false}
         >
             <div className="border border-dark bg-white h-100 d-flex flex-column shadow-sm">
                 <div className="window-header bg-primary text-white px-2 d-flex justify-content-between align-items-center" style={{ cursor: 'grab' }}>
@@ -51,14 +49,8 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
                 </div>
 
                 <div className="flex-grow-1 overflow-hidden bg-light">
-                    {imgUrl ? (
-                        <img src={imgUrl} className="w-100 h-100 object-fit-contain" alt={title} draggable={false} />
-                    ) : (
-                        <div className="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
-                            No Image
-                        </div>
-                    )}
-                </div>
+                    <FileFactory uuid={data.id} thumbnail={data?.thumbnail} />
+                </div> 
             </div>
         </Rnd>
     );

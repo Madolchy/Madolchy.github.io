@@ -4,7 +4,7 @@ import { FileIconFactory } from './IconFactory';
 import { useBlob } from '../context/BlobContext';
 
 
-const DesktopIcon = React.memo(({ id, data, isActive, onMouseUpCallback, onMouseDownCallback, onCellDrop, onDoubleClick }: any) => {
+const DesktopIcon = React.memo(({ id, data, isActive, onMouseUpCallback, onMouseDownCallback, onCellDrop, onDoubleClick, onContextMenu }: any) => {
     const { getUrl } = useBlob();
 
     const imgUrl = (() => {
@@ -17,14 +17,15 @@ const DesktopIcon = React.memo(({ id, data, isActive, onMouseUpCallback, onMouse
             id={`icon-${id}`}
             className="position-relative text-black bg-transparent d-flex align-items-center justify-content-center"
             draggable={false}
-            onMouseDown={() => onMouseDownCallback(id)}
-            onMouseUp={() => onMouseUpCallback(id)}
+            onMouseDown={(e) => { e.button === 2 ? onContextMenu(e, id) : onMouseDownCallback(id, data?.id); }}
+            onMouseUp={(e) => onMouseUpCallback(id)}
 
             onDragStart={(e) => e.preventDefault()}
             onDrop={(e) => onCellDrop(e, id)}
             onDragOver={(e) => e.preventDefault()}
 
             onDoubleClick={(e) => { e.stopPropagation(); if (onDoubleClick) onDoubleClick(id, data); }}
+
         >
             <div className={`icon icon-grabbable d-flex align-items-center justify-content-center position-relative pe-none ${isActive ? 'icon-highlight' : ''}`} style={{ zIndex: 2 }}>
                 {imgUrl ? (
@@ -34,7 +35,7 @@ const DesktopIcon = React.memo(({ id, data, isActive, onMouseUpCallback, onMouse
                         className="w-100 h-100 object-fit-contain pe-none user-select-none native-drag-none"
                     />
                 ) : (
-                    <FileIconFactory fileType={data?.file_type} />
+                    <FileIconFactory fileType={data?.fileType} />
                 )}
             </div>
         </div >

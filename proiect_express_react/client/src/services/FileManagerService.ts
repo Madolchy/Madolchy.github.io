@@ -24,12 +24,21 @@ export const FileManagerService = {
             }));
 
             console.log("After adding thumbnails: ", mappedData)
+
             return mappedData
+
 
         } catch (error) {
             console.error("Failed to get desktop: ", error);
             return undefined;
         }
+    },
+    getRawFile: async (fileUuid: string) => {
+        const response = await apiClient.get(`download/${fileUuid}`);
+        if (!response.ok) return undefined;
+
+        const blob = await response.blob();
+        return blob
     },
 
     uploadFile: async (files, index) => {
