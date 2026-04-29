@@ -53,10 +53,10 @@ app.get("/", VisitCounter, (req: Request, res: Response) => {
 });
 
 app.post("/api/register", authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+    if (isProd) return res.status(503).json({ success: false, message: "Registration is currently disabled" });
     try {
         const result = await DBService.registerUser(req);
         if (!result.success) {
-            // REMOVED: console.log(result) - Don't log passwords/sensitive data in prod!
             return res.status(400).json({ success: false, message: result.message });
         }
         return res.status(200).json({ success: true, message: "yay" });
