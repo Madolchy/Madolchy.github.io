@@ -1,8 +1,10 @@
 import ky from 'ky'
 import { AuthService } from '../services/AuthService';
 
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 export const apiClient = ky.create({
-    prefix: '/api',
+    prefixUrl: BASE_URL,
     credentials: 'include',
     hooks: {
         beforeRequest: [
@@ -18,7 +20,7 @@ export const apiClient = ky.create({
             async ({ request, response, retryCount }) => {
                 if (response.status === 401 && retryCount === 0) {
                     try {
-                        const { token } = await ky.post('/api/refresh', { credentials: 'include' }).json<{ token: string }>();
+                        const { token } = await ky.post('refresh', { prefixUrl: BASE_URL, credentials: 'include' }).json<{ token: string }>();
 
                         const headers = new Headers(request.headers);
                         headers.set('Authorization', `Bearer ${token}`);

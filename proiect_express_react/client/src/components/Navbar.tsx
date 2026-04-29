@@ -20,7 +20,6 @@ export default function Navbar() {
             </div>
 
             <div className="d-flex align-items-center ms-auto ps-3">
-                <span className="me-3 text-secondary small d-none d-md-block">Salut {username}</span>
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"

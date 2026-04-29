@@ -11,14 +11,21 @@ import cookieParser from 'cookie-parser';
 import ms from 'ms';
 import { AuthService } from './services/AuthService.js';
 import path from 'node:path';
-import fs from 'fs'
- 
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
+const isProd = process.env.NODE_ENV === 'production';
+const bindAddress = process.env.BIND_ADDRESS || (isProd ? '0.0.0.0' : '127.0.0.1');
 
 app.use(express.json());
-app.use(cookieParser())
+app.use(cookieParser());
+
+// ---------- API routes ----------
 
 app.get('/', VisitCounter, (req: Request, res: Response) => {
     res.send('Hello from Express and TypeScript!');
@@ -54,8 +61,8 @@ app.post("/api/login", async (req: Request, res: Response) => {
     if (result.refreshToken) {
         res.cookie('refreshToken', result.refreshToken, {
             httpOnly: true,
-            secure: false, // change this for prod ofc
-            sameSite: 'strict',
+            secure: isProd || process.env.SECURE_COOKIE === 'true',
+            sameSite: isProd ? 'none' : 'lax',
             maxAge: ms('7d')
         });
     }
@@ -101,7 +108,11 @@ app.post("/api/logout", requireLogin, async (req: Request, res: Response) => {
         })
     }
 
-    res.clearCookie('refreshToken');
+    res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: isProd || process.env.SECURE_COOKIE === 'true',
+        sameSite: isProd ? 'none' : 'lax',
+    });
 
     return res.status(200).json({
         success: true,
@@ -195,7 +206,3 @@ app.post("/api/db", async (req: Request, res: Response) => {
     console.log("All avalible users: ", await DBService.getUsers());
     console.log(await DBService.registerUser(req));
 })
-
-app.listen(port as number, "127.0.0.1", () => {
-    console.log(`Server is running at http://127.0.0.1:${port}`);
-});

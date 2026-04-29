@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import './GridContainer.css';
 
 interface GridContainerProps {
     boxSize: { width: number; height: number };
@@ -6,20 +7,22 @@ interface GridContainerProps {
     children: React.ReactNode;
     onContextMenu?: (e: React.MouseEvent) => void;
     onMouseDown?: (e: React.MouseEvent) => void;
+    backgroundImage?: string;
 }
 
 export const GridContainer = React.memo(forwardRef<HTMLDivElement, GridContainerProps>(
-    ({ boxSize, actualColumns, children, onContextMenu, onMouseDown }, ref) => {
+    ({ boxSize, actualColumns, children, onContextMenu, onMouseDown, backgroundImage }, ref) => {
         return (
             <div
                 ref={ref}
                 onContextMenu={onContextMenu}
                 onMouseDown={onMouseDown}
-                className="w-100 vh-100 dynamic-grid-container flex-grow-1 border border-dark p-0 position-relative overflow-hidden"
+                className="grid-container-layout dynamic-grid-container"
                 style={{
                     '--box-width': `${boxSize.width}px`,
                     '--box-height': `${boxSize.height}px`,
-                    '--box-count': actualColumns
+                    '--box-count': actualColumns,
+                    ...(backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {})
                 } as React.CSSProperties}
             >
                 {children}

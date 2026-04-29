@@ -60,6 +60,26 @@ export const db = {
             console.error("something failed while getting all keys ", error);
             return null;
         }
+    },
+
+    saveBackground: async (blob: Blob) => {
+        try {
+            const db = await getDB();
+            await db.put(STORE_NAME, blob, '__desktop_background__');
+        } catch (error) {
+            console.error("Failed to save background:", error);
+        }
+    },
+
+    getBackground: async () => {
+        try {
+            const db = await getDB();
+            const blob = await db.get(STORE_NAME, '__desktop_background__');
+            return blob || null;
+        } catch (error) {
+            console.error("Failed to get background:", error);
+            return null;
+        }
     }
 }
 

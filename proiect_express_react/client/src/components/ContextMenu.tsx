@@ -2,10 +2,12 @@ import type { vec2 } from "../types/default";
 
 interface ContextMenuProps {
     isActive: boolean;
-    position: vec2
+    position: vec2;
+    canSetBackground?: boolean;
+    onSetBackground?: () => void;
 }
 
-export default function ContextMenu({ isActive, position } : ContextMenuProps) {
+export default function ContextMenu({ isActive, position, canSetBackground, onSetBackground } : ContextMenuProps) {
     if (!isActive) return null;
 
     const style = {
@@ -20,11 +22,17 @@ export default function ContextMenu({ isActive, position } : ContextMenuProps) {
     return (
         <>
             <ul className="dropdown-menu shadow" style={style}>
-                <li><button className="dropdown-item" type="button">Action</button></li>
-                <li><button className="dropdown-item" type="button">Another action</button></li>
-                <li><button className="dropdown-item" type="button">Something else here</button></li>
+                {canSetBackground && (
+                    <li>
+                        <button className="dropdown-item" type="button" onClick={onSetBackground}>
+                            Set as background
+                        </button>
+                    </li>
+                )}
+                {!canSetBackground && (
+                    <li><span className="dropdown-item text-muted">No actions available</span></li>
+                )}
             </ul>
-
         </>
     )
 }
