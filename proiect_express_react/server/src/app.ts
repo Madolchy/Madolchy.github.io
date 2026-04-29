@@ -34,7 +34,7 @@ app.use(helmet());
 
 app.use(
     cors({
-        origin: isProd ? "https://lastendconductor.lunaticbadrabbit.workers.dev" : "http://localhost:5173",
+        origin: isProd ? ["https://lastendconductor.lunaticbadrabbit.workers.dev", "https://madolchy.github.io"] : "http://localhost:5173",
         credentials: true,
     }),
 );
@@ -208,7 +208,11 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 // --- START THE SERVER ---
-app.listen(Number(port), bindAddress, () => {
+app.listen(Number(port), bindAddress, (err?: Error) => {
+    if (err) {
+        console.error("Error starting server:", err);
+        process.exit(1);
+    }
     console.log(`Server is running in ${isProd ? "PRODUCTION" : "DEVELOPMENT"} mode.`);
     console.log(`Listening on http://${bindAddress}:${port}`);
 });
