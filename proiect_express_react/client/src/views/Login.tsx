@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AuthService } from '../services/AuthService';
+import { apiClient } from '../client/apiClient';
 
 const LoginSchema = z.object({
     email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
@@ -14,25 +15,19 @@ const LoginSchema = z.object({
 type LoginFormInputs = z.infer<typeof LoginSchema>;
 
 const loginUser = async (credentials: LoginFormInputs) => {
-    const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-    });
+    try {
+        const data = await apiClient.post('login', {
+            json: credentials,
+        }).json<any>();
 
-    if (!response.ok) {
-        throw new Error("Internal Server Error")
+        if (!data.success) {
+            throw new Error("Backend Error");
+        }
+
+        return data;
+    } catch (error: any) {
+        throw new Error(error?.message || "Internal Server Error");
     }
-
-    const data = await response.json();
-    if (!data.success) {
-        throw new Error("Backend Error")
-    }
-
-
-    return data;
 };
 
 export default function Login() {

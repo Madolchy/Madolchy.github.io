@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { apiClient } from '../client/apiClient';
 
 const RegisterSchema = z.object({
     name: z.string().min(1),
@@ -16,24 +17,19 @@ const RegisterSchema = z.object({
 type RegisterFormInputs = z.infer<typeof RegisterSchema>;
 
 const registerUser = async (userData: RegisterFormInputs) => {
-    const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-    });
+    try {
+        const data = await apiClient.post('register', {
+            json: userData,
+        }).json<any>();
 
-    if (!response.ok) {
-        throw new Error("Internal Server Error");
+        if (!data.success) {
+            throw new Error(data.message || "Backend Error");
+        }
+
+        return data;
+    } catch (error: any) {
+        throw new Error(error?.message || "Internal Server Error");
     }
-
-    const data = await response.json();
-    if (!data.success) {
-        throw new Error(data.message || "Backend Error");
-    }
-
-    return data;
 };
 
 export default function Register() {
