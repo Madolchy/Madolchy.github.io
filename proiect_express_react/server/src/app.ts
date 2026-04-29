@@ -26,9 +26,12 @@ const port = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === "production";
 const bindAddress = process.env.BIND_ADDRESS || (isProd ? "0.0.0.0" : "127.0.0.1");
 
+// Tells Express it is behind a trusted proxy (Cloudflare)
+// and to use the real user's IP from the X-Forwarded-For header.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 
-// 2. CORS prevents random websites from making requests to your API
 app.use(
     cors({
         origin: isProd ? "https://lastendconductor.lunaticbadrabbit.workers.dev" : "http://localhost:5173",
