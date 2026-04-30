@@ -18,7 +18,10 @@ export default function Desktop({ onCellDrop }) {
     const { boxSize, containerRef, actualColumns } = useGrid(boxNumberPerRow, isLoading);
     const { windows, openWindow, closeWindow, bringToFront } = useWindowManager();
     const { contextActiveId, contextPosition, openContext } = useContextMenu();
-    const { backgroundUrl, canSetBackground, handleSetBackground } = useBackgroundManager(contextActiveId, gridData);
+    const { backgroundUrl, canSetBackground, handleSetBackground, isBackgroundSetting } = useBackgroundManager(
+        contextActiveId,
+        gridData,
+    );
 
     if (isLoading) return <div>Loading Desktop...</div>;
     if (isError || !gridData) return <div>Failed to load icons!</div>;
@@ -52,6 +55,7 @@ export default function Desktop({ onCellDrop }) {
                 position={contextPosition}
                 canSetBackground={canSetBackground}
                 onSetBackground={handleSetBackground}
+                isBackgroundSetting={isBackgroundSetting}
             />
 
             {windows.map((win) => (

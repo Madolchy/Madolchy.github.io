@@ -1,55 +1,58 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { db } from '../store/db';
-import { FileManagerService } from '../services/FileManagerService';
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { db } from "../store/db";
+import { FileManagerService } from "../services/FileManagerService";
+import { useBlob } from "../context/BlobContext";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useBackgroundManager(contextActiveId: number | null, gridData: any) {
-    const [backgroundUrl, setBackgroundUrl] = useState<string | undefined>(undefined);
-    const prevBackgroundUrl = useRef<string | undefined>(undefined);
+    const { getUrl } = useBlob();
+    const queryClient = useQueryClient();
 
-    // Initial load and cleanup
-    useEffect(() => {
-        db.getBackground().then((blob) => {
-            if (blob) {
-                const url = URL.createObjectURL(blob);
-                prevBackgroundUrl.current = url;
-                setBackgroundUrl(url);
-            }
-        });
+    const { data: backgroundData } = useQuery({
+        queryKey: ["background"],
+        queryFn: async () => await db.getBackground(),
+    });
 
-        return () => {
-            if (prevBackgroundUrl.current) {
-                URL.revokeObjectURL(prevBackgroundUrl.current);
-            }
-        };
-    }, []);
+    const backgroundUrl = useMemo(() => {
+        if (!backgroundData?.backgroundBlob) return null;
+
+        return getUrl("background", backgroundData.backgroundBlob);
+    }, [backgroundData, getUrl]);
+
+    const setBackgroundMutation = useMutation({
+        mutationFn: async (uuid: string) => {
+            const blob = await FileManagerService.getRawFile(uuid);
+            if (!blob) throw new Error("Failed to retrieve file for background");
+
+            await db.saveBackground(uuid, blob);
+            return { uuid, blob };
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["background"] });
+        },
+    });
 
     const canSetBackground = useMemo(() => {
         if (contextActiveId === null || !gridData) return false;
-        const data = (gridData as any[])[contextActiveId];
-        return !!(data && data.fileType && data.fileType.startsWith('image/'));
+        const data = gridData[contextActiveId];
+        return !!(data && data.fileType && data.fileType.startsWith("image/"));
     }, [contextActiveId, gridData]);
 
     const handleSetBackground = useCallback(async () => {
+        if (setBackgroundMutation.isPending) return; // prevent double mutations at same time
+
         if (contextActiveId === null || !gridData) return;
-        const data = (gridData as any[])[contextActiveId];
-        if (!data || !data.id) return;
 
-        try {
-            const blob = await FileManagerService.getRawFile(data.id);
-            if (!blob) return;
-
-            await db.saveBackground(blob);
-
-            const url = URL.createObjectURL(blob);
-            if (prevBackgroundUrl.current) {
-                URL.revokeObjectURL(prevBackgroundUrl.current);
-            }
-            prevBackgroundUrl.current = url;
-            setBackgroundUrl(url);
-        } catch (error) {
-            console.error("Failed to set background:", error);
+        const data = gridData[contextActiveId];
+        if (data?.id) {
+            setBackgroundMutation.mutate(data.id);
         }
-    }, [contextActiveId, gridData]);
+    }, [contextActiveId, gridData, setBackgroundMutation]);
 
-    return { backgroundUrl, canSetBackground, handleSetBackground };
+    return {
+        backgroundUrl,
+        canSetBackground,
+        handleSetBackground,
+        isBackgroundSetting: setBackgroundMutation.isPending,
+    };
 }

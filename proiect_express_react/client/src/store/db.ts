@@ -1,7 +1,7 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
-const DB_NAME = 'AppDatabase';
-const STORE_NAME = 'thumbnails';
+const DB_NAME = "AppDatabase";
+const STORE_NAME = "thumbnails";
 
 let dbPromise: Promise<IDBPDatabase<any>> | null = null;
 
@@ -32,6 +32,7 @@ export const db = {
     getThumbnail: async (id: string) => {
         try {
             const db = await getDB();
+            console.log("Trying to get thumbnail with it: ", id);
             const blob = await db.get(STORE_NAME, id);
             return blob;
         } catch (error) {
@@ -62,10 +63,10 @@ export const db = {
         }
     },
 
-    saveBackground: async (blob: Blob) => {
+    saveBackground: async (uuid: string, blob: Blob) => {
         try {
             const db = await getDB();
-            await db.put(STORE_NAME, blob, '__desktop_background__');
+            await db.put(STORE_NAME, { uuid: uuid, backgroundBlob: blob }, "background");
         } catch (error) {
             console.error("Failed to save background:", error);
         }
@@ -74,13 +75,13 @@ export const db = {
     getBackground: async () => {
         try {
             const db = await getDB();
-            const blob = await db.get(STORE_NAME, '__desktop_background__');
-            return blob || null;
+            const data = await db.get(STORE_NAME, "background");
+            return data;
         } catch (error) {
             console.error("Failed to get background:", error);
-            return null;
+            return undefined;
         }
-    }
-}
+    },
+};
 
 console.log("getdb:", getDB);

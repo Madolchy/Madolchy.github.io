@@ -34,7 +34,9 @@ app.use(helmet());
 
 app.use(
     cors({
-        origin: isProd ? ["https://lastendconductor.lunaticbadrabbit.workers.dev", "https://madolchy.github.io"] : "http://localhost:5173",
+        origin: isProd
+            ? ["https://lastendconductor.lunaticbadrabbit.workers.dev", "https://madolchy.github.io"]
+            : ["http://localhost:5173", "http://localhost:4173"],
         credentials: true,
     }),
 );

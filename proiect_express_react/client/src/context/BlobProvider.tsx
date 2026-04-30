@@ -1,6 +1,5 @@
-import React, { useRef, useCallback, useEffect } from 'react';
-import { BlobContext } from './BlobContext';
-
+import React, { useRef, useCallback, useEffect } from "react";
+import { BlobContext } from "./BlobContext";
 
 export const BlobProvider = ({ children }) => {
     const urlMap = useRef(new Map());
@@ -31,9 +30,5 @@ export const BlobProvider = ({ children }) => {
         };
     }, []);
 
-    return (
-        <BlobContext.Provider value={{ getUrl, revokeUrl }}>
-            {children}
-        </BlobContext.Provider>
-    );
+    return <BlobContext.Provider value={{ getUrl, revokeUrl }}>{children}</BlobContext.Provider>;
 };

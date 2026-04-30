@@ -10,7 +10,7 @@ import type { Prisma } from '../prisma/client';
 // ENUMS
 /////////////////////////////////////////
 
-export const UserScalarFieldEnumSchema = z.enum(['id','name','email','passwordHash','uuid']);
+export const UserScalarFieldEnumSchema = z.enum(['id','name','email','passwordHash','uuid','background']);
 
 export const DesktopIconScalarFieldEnumSchema = z.enum(['id','filename','fileType','bytes','cell','userId']);
 
@@ -31,6 +31,7 @@ export const UserSchema = z.object({
   email: z.string(),
   passwordHash: z.string(),
   uuid: z.string(),
+  background: z.string().nullable(),
 })
 
 export type User = z.infer<typeof UserSchema>
@@ -79,6 +80,7 @@ export const UserSelectSchema: z.ZodType<Prisma.UserSelect> = z.object({
   email: z.boolean().optional(),
   passwordHash: z.boolean().optional(),
   uuid: z.boolean().optional(),
+  background: z.boolean().optional(),
   icons: z.union([z.boolean(),z.lazy(() => DesktopIconArgsSchema)]).optional(),
   _count: z.union([z.boolean(),z.lazy(() => UserCountOutputTypeArgsSchema)]).optional(),
 }).strict()
@@ -118,6 +120,7 @@ export const UserWhereInputSchema: z.ZodType<Prisma.UserWhereInput> = z.strictOb
   email: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   passwordHash: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   uuid: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  background: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
   icons: z.lazy(() => DesktopIconListRelationFilterSchema).optional(),
 });
 
@@ -127,6 +130,7 @@ export const UserOrderByWithRelationInputSchema: z.ZodType<Prisma.UserOrderByWit
   email: z.lazy(() => SortOrderSchema).optional(),
   passwordHash: z.lazy(() => SortOrderSchema).optional(),
   uuid: z.lazy(() => SortOrderSchema).optional(),
+  background: z.lazy(() => SortOrderSchema).optional(),
   icons: z.lazy(() => DesktopIconOrderByRelationAggregateInputSchema).optional(),
 });
 
@@ -167,6 +171,7 @@ export const UserWhereUniqueInputSchema: z.ZodType<Prisma.UserWhereUniqueInput> 
   NOT: z.union([ z.lazy(() => UserWhereInputSchema), z.lazy(() => UserWhereInputSchema).array() ]).optional(),
   name: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   passwordHash: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  background: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
   icons: z.lazy(() => DesktopIconListRelationFilterSchema).optional(),
 }));
 
@@ -176,6 +181,7 @@ export const UserOrderByWithAggregationInputSchema: z.ZodType<Prisma.UserOrderBy
   email: z.lazy(() => SortOrderSchema).optional(),
   passwordHash: z.lazy(() => SortOrderSchema).optional(),
   uuid: z.lazy(() => SortOrderSchema).optional(),
+  background: z.lazy(() => SortOrderSchema).optional(),
   _count: z.lazy(() => UserCountOrderByAggregateInputSchema).optional(),
   _max: z.lazy(() => UserMaxOrderByAggregateInputSchema).optional(),
   _min: z.lazy(() => UserMinOrderByAggregateInputSchema).optional(),
@@ -190,6 +196,7 @@ export const UserScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.UserScal
   email: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   passwordHash: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   uuid: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  background: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
 });
 
 export const DesktopIconWhereInputSchema: z.ZodType<Prisma.DesktopIconWhereInput> = z.strictObject({
@@ -290,6 +297,7 @@ export const UserCreateInputSchema: z.ZodType<Prisma.UserCreateInput> = z.strict
   email: z.string(),
   passwordHash: z.string(),
   uuid: z.string(),
+  background: z.string().optional().nullable(),
   icons: z.lazy(() => DesktopIconCreateNestedManyWithoutUserInputSchema).optional(),
 });
 
@@ -299,6 +307,7 @@ export const UserUncheckedCreateInputSchema: z.ZodType<Prisma.UserUncheckedCreat
   email: z.string(),
   passwordHash: z.string(),
   uuid: z.string(),
+  background: z.string().optional().nullable(),
   icons: z.lazy(() => DesktopIconUncheckedCreateNestedManyWithoutUserInputSchema).optional(),
 });
 
@@ -307,6 +316,7 @@ export const UserUpdateInputSchema: z.ZodType<Prisma.UserUpdateInput> = z.strict
   email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   passwordHash: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   uuid: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  background: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   icons: z.lazy(() => DesktopIconUpdateManyWithoutUserNestedInputSchema).optional(),
 });
 
@@ -315,6 +325,7 @@ export const UserUncheckedUpdateInputSchema: z.ZodType<Prisma.UserUncheckedUpdat
   email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   passwordHash: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   uuid: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  background: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   icons: z.lazy(() => DesktopIconUncheckedUpdateManyWithoutUserNestedInputSchema).optional(),
 });
 
@@ -324,6 +335,7 @@ export const UserCreateManyInputSchema: z.ZodType<Prisma.UserCreateManyInput> = 
   email: z.string(),
   passwordHash: z.string(),
   uuid: z.string(),
+  background: z.string().optional().nullable(),
 });
 
 export const UserUpdateManyMutationInputSchema: z.ZodType<Prisma.UserUpdateManyMutationInput> = z.strictObject({
@@ -331,6 +343,7 @@ export const UserUpdateManyMutationInputSchema: z.ZodType<Prisma.UserUpdateManyM
   email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   passwordHash: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   uuid: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  background: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
 export const UserUncheckedUpdateManyInputSchema: z.ZodType<Prisma.UserUncheckedUpdateManyInput> = z.strictObject({
@@ -338,6 +351,7 @@ export const UserUncheckedUpdateManyInputSchema: z.ZodType<Prisma.UserUncheckedU
   email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   passwordHash: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   uuid: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  background: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
 export const DesktopIconCreateInputSchema: z.ZodType<Prisma.DesktopIconCreateInput> = z.strictObject({
@@ -413,6 +427,22 @@ export const StringFilterSchema: z.ZodType<Prisma.StringFilter> = z.strictObject
   not: z.union([ z.string(),z.lazy(() => NestedStringFilterSchema) ]).optional(),
 });
 
+export const StringNullableFilterSchema: z.ZodType<Prisma.StringNullableFilter> = z.strictObject({
+  equals: z.string().optional().nullable(),
+  in: z.string().array().optional().nullable(),
+  notIn: z.string().array().optional().nullable(),
+  lt: z.string().optional(),
+  lte: z.string().optional(),
+  gt: z.string().optional(),
+  gte: z.string().optional(),
+  contains: z.string().optional(),
+  startsWith: z.string().optional(),
+  endsWith: z.string().optional(),
+  mode: z.lazy(() => QueryModeSchema).optional(),
+  not: z.union([ z.string(),z.lazy(() => NestedStringNullableFilterSchema) ]).optional().nullable(),
+  isSet: z.boolean().optional(),
+});
+
 export const DesktopIconListRelationFilterSchema: z.ZodType<Prisma.DesktopIconListRelationFilter> = z.strictObject({
   every: z.lazy(() => DesktopIconWhereInputSchema).optional(),
   some: z.lazy(() => DesktopIconWhereInputSchema).optional(),
@@ -429,6 +459,7 @@ export const UserCountOrderByAggregateInputSchema: z.ZodType<Prisma.UserCountOrd
   email: z.lazy(() => SortOrderSchema).optional(),
   passwordHash: z.lazy(() => SortOrderSchema).optional(),
   uuid: z.lazy(() => SortOrderSchema).optional(),
+  background: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const UserMaxOrderByAggregateInputSchema: z.ZodType<Prisma.UserMaxOrderByAggregateInput> = z.strictObject({
@@ -437,6 +468,7 @@ export const UserMaxOrderByAggregateInputSchema: z.ZodType<Prisma.UserMaxOrderBy
   email: z.lazy(() => SortOrderSchema).optional(),
   passwordHash: z.lazy(() => SortOrderSchema).optional(),
   uuid: z.lazy(() => SortOrderSchema).optional(),
+  background: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const UserMinOrderByAggregateInputSchema: z.ZodType<Prisma.UserMinOrderByAggregateInput> = z.strictObject({
@@ -445,6 +477,7 @@ export const UserMinOrderByAggregateInputSchema: z.ZodType<Prisma.UserMinOrderBy
   email: z.lazy(() => SortOrderSchema).optional(),
   passwordHash: z.lazy(() => SortOrderSchema).optional(),
   uuid: z.lazy(() => SortOrderSchema).optional(),
+  background: z.lazy(() => SortOrderSchema).optional(),
 });
 
 export const StringWithAggregatesFilterSchema: z.ZodType<Prisma.StringWithAggregatesFilter> = z.strictObject({
@@ -463,6 +496,25 @@ export const StringWithAggregatesFilterSchema: z.ZodType<Prisma.StringWithAggreg
   _count: z.lazy(() => NestedIntFilterSchema).optional(),
   _min: z.lazy(() => NestedStringFilterSchema).optional(),
   _max: z.lazy(() => NestedStringFilterSchema).optional(),
+});
+
+export const StringNullableWithAggregatesFilterSchema: z.ZodType<Prisma.StringNullableWithAggregatesFilter> = z.strictObject({
+  equals: z.string().optional().nullable(),
+  in: z.string().array().optional().nullable(),
+  notIn: z.string().array().optional().nullable(),
+  lt: z.string().optional(),
+  lte: z.string().optional(),
+  gt: z.string().optional(),
+  gte: z.string().optional(),
+  contains: z.string().optional(),
+  startsWith: z.string().optional(),
+  endsWith: z.string().optional(),
+  mode: z.lazy(() => QueryModeSchema).optional(),
+  not: z.union([ z.string(),z.lazy(() => NestedStringNullableWithAggregatesFilterSchema) ]).optional().nullable(),
+  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _min: z.lazy(() => NestedStringNullableFilterSchema).optional(),
+  _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
+  isSet: z.boolean().optional(),
 });
 
 export const IntFilterSchema: z.ZodType<Prisma.IntFilter> = z.strictObject({
@@ -562,6 +614,11 @@ export const StringFieldUpdateOperationsInputSchema: z.ZodType<Prisma.StringFiel
   set: z.string().optional(),
 });
 
+export const NullableStringFieldUpdateOperationsInputSchema: z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput> = z.strictObject({
+  set: z.string().optional().nullable(),
+  unset: z.boolean().optional(),
+});
+
 export const DesktopIconUpdateManyWithoutUserNestedInputSchema: z.ZodType<Prisma.DesktopIconUpdateManyWithoutUserNestedInput> = z.strictObject({
   create: z.union([ z.lazy(() => DesktopIconCreateWithoutUserInputSchema), z.lazy(() => DesktopIconCreateWithoutUserInputSchema).array(), z.lazy(() => DesktopIconUncheckedCreateWithoutUserInputSchema), z.lazy(() => DesktopIconUncheckedCreateWithoutUserInputSchema).array() ]).optional(),
   connectOrCreate: z.union([ z.lazy(() => DesktopIconCreateOrConnectWithoutUserInputSchema), z.lazy(() => DesktopIconCreateOrConnectWithoutUserInputSchema).array() ]).optional(),
@@ -626,6 +683,21 @@ export const NestedStringFilterSchema: z.ZodType<Prisma.NestedStringFilter> = z.
   not: z.union([ z.string(),z.lazy(() => NestedStringFilterSchema) ]).optional(),
 });
 
+export const NestedStringNullableFilterSchema: z.ZodType<Prisma.NestedStringNullableFilter> = z.strictObject({
+  equals: z.string().optional().nullable(),
+  in: z.string().array().optional().nullable(),
+  notIn: z.string().array().optional().nullable(),
+  lt: z.string().optional(),
+  lte: z.string().optional(),
+  gt: z.string().optional(),
+  gte: z.string().optional(),
+  contains: z.string().optional(),
+  startsWith: z.string().optional(),
+  endsWith: z.string().optional(),
+  not: z.union([ z.string(),z.lazy(() => NestedStringNullableFilterSchema) ]).optional().nullable(),
+  isSet: z.boolean().optional(),
+});
+
 export const NestedStringWithAggregatesFilterSchema: z.ZodType<Prisma.NestedStringWithAggregatesFilter> = z.strictObject({
   equals: z.string().optional(),
   in: z.string().array().optional(),
@@ -652,6 +724,36 @@ export const NestedIntFilterSchema: z.ZodType<Prisma.NestedIntFilter> = z.strict
   gt: z.number().optional(),
   gte: z.number().optional(),
   not: z.union([ z.number(),z.lazy(() => NestedIntFilterSchema) ]).optional(),
+});
+
+export const NestedStringNullableWithAggregatesFilterSchema: z.ZodType<Prisma.NestedStringNullableWithAggregatesFilter> = z.strictObject({
+  equals: z.string().optional().nullable(),
+  in: z.string().array().optional().nullable(),
+  notIn: z.string().array().optional().nullable(),
+  lt: z.string().optional(),
+  lte: z.string().optional(),
+  gt: z.string().optional(),
+  gte: z.string().optional(),
+  contains: z.string().optional(),
+  startsWith: z.string().optional(),
+  endsWith: z.string().optional(),
+  not: z.union([ z.string(),z.lazy(() => NestedStringNullableWithAggregatesFilterSchema) ]).optional().nullable(),
+  _count: z.lazy(() => NestedIntNullableFilterSchema).optional(),
+  _min: z.lazy(() => NestedStringNullableFilterSchema).optional(),
+  _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
+  isSet: z.boolean().optional(),
+});
+
+export const NestedIntNullableFilterSchema: z.ZodType<Prisma.NestedIntNullableFilter> = z.strictObject({
+  equals: z.number().optional().nullable(),
+  in: z.number().array().optional().nullable(),
+  notIn: z.number().array().optional().nullable(),
+  lt: z.number().optional(),
+  lte: z.number().optional(),
+  gt: z.number().optional(),
+  gte: z.number().optional(),
+  not: z.union([ z.number(),z.lazy(() => NestedIntNullableFilterSchema) ]).optional().nullable(),
+  isSet: z.boolean().optional(),
 });
 
 export const NestedIntWithAggregatesFilterSchema: z.ZodType<Prisma.NestedIntWithAggregatesFilter> = z.strictObject({
@@ -740,6 +842,7 @@ export const UserCreateWithoutIconsInputSchema: z.ZodType<Prisma.UserCreateWitho
   email: z.string(),
   passwordHash: z.string(),
   uuid: z.string(),
+  background: z.string().optional().nullable(),
 });
 
 export const UserUncheckedCreateWithoutIconsInputSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutIconsInput> = z.strictObject({
@@ -748,6 +851,7 @@ export const UserUncheckedCreateWithoutIconsInputSchema: z.ZodType<Prisma.UserUn
   email: z.string(),
   passwordHash: z.string(),
   uuid: z.string(),
+  background: z.string().optional().nullable(),
 });
 
 export const UserCreateOrConnectWithoutIconsInputSchema: z.ZodType<Prisma.UserCreateOrConnectWithoutIconsInput> = z.strictObject({
@@ -771,6 +875,7 @@ export const UserUpdateWithoutIconsInputSchema: z.ZodType<Prisma.UserUpdateWitho
   email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   passwordHash: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   uuid: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  background: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
 export const UserUncheckedUpdateWithoutIconsInputSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutIconsInput> = z.strictObject({
@@ -778,6 +883,7 @@ export const UserUncheckedUpdateWithoutIconsInputSchema: z.ZodType<Prisma.UserUn
   email: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   passwordHash: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   uuid: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  background: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
 });
 
 export const DesktopIconCreateManyUserInputSchema: z.ZodType<Prisma.DesktopIconCreateManyUserInput> = z.strictObject({

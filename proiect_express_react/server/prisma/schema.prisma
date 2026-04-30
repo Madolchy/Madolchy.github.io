@@ -23,6 +23,7 @@ model User {
   passwordHash  String
   uuid          String        @unique
   icons         DesktopIcon[]
+  background    String?
 }
 
 model DesktopIcon {

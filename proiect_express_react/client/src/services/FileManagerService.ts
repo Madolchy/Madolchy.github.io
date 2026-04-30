@@ -1,61 +1,41 @@
 import { apiClient } from "../client/apiClient";
-import { db } from "../store/db";
-
 
 export const FileManagerService = {
-    getUserDesktop: async () => {
+    getUserDesktop: async (dir: string) => {
         try {
-            const response = await apiClient.get('desktop');
+            const response = await apiClient.get("desktop");
             if (!response.ok) return undefined;
 
             const data = await response.json();
-
-            const values = await db.getAllThumbnails();
-            const keys = await db.getAllThumbnailsKeys();
-
-            const thumbnailMap = {};
-            keys.forEach((id, index) => {
-                thumbnailMap[id] = values[index];
-            });
-
-            const mappedData = data.map((icon) => ({
-                ...icon,
-                thumbnail: thumbnailMap[icon.id] || null
-            }));
-
-            console.log("After adding thumbnails: ", mappedData)
-
-            return mappedData
-
-
+            return data;
         } catch (error) {
             console.error("Failed to get desktop: ", error);
             return undefined;
         }
     },
-    getRawFile: async (fileUuid: string) => {
+
+    getRawFile: async (fileUuid: string): Promise<Blob | undefined> => {
         const response = await apiClient.get(`download/${fileUuid}`);
         if (!response.ok) return undefined;
 
         const blob = await response.blob();
-        return blob
+        return blob;
     },
 
     uploadFile: async (files, index) => {
-        const formData = new FormData()
+        const formData = new FormData();
 
-        formData.append('index', index)
-        formData.append('myFile', files);
+        formData.append("index", index);
+        formData.append("myFile", files);
 
         try {
-            const response = await apiClient.post('upload', { body: formData })
+            const response = await apiClient.post("upload", { body: formData });
             if (response.ok) {
                 return await response.json();
             }
-        }
-        catch (error) {
-            console.error("Upload failed: ", error)
+        } catch (error) {
+            console.error("Upload failed: ", error);
             return undefined;
         }
-    }
-}
+    },
+};
