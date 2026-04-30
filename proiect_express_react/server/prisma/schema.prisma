@@ -22,8 +22,9 @@ model User {
   email         String        @unique
   passwordHash  String
   uuid          String        @unique
-  icons         DesktopIcon[]
-  background    String?
+  icons         DesktopIcon[] @relation("UserIcons")
+  backgroundIconId String? @unique @db.ObjectId
+  backgroundIcon    DesktopIcon? @relation("UserBackground", fields: [backgroundIconId], references: [id])
 }
 
 model DesktopIcon {
@@ -34,7 +35,8 @@ model DesktopIcon {
   cell      Int
   userId    String
 
-  user     User   @relation(fields: [userId], references: [id])
+  user            User   @relation("UserIcons", fields: [userId], references: [id], onUpdate: NoAction)
+  backgroundUser  User?  @relation("UserBackground")
 
   @@unique([userId, filename])
   @@unique([userId, cell])
