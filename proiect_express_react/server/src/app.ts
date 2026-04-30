@@ -54,7 +54,7 @@ app.use(cookieParser());
 // ---------- API routes ----------
 
 app.get("/", VisitCounter, (req: Request, res: Response) => {
-    res.send("Hello from Express and TypeScript!");
+    res.send("hello world");
 });
 
 app.post("/api/register", authLimiter, async (req: Request, res: Response, next: NextFunction) => {
@@ -126,6 +126,15 @@ app.post("/api/logout", requireLogin, async (req: Request, res: Response, next: 
     }
 });
 
+app.post("/api/background/", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
+    const result = await DBService.setUserBackground(req);
+    if (result.success) {
+        return res.status(200).json({ success: true, message: "Background set successfully" });
+    } else {
+        return res.status(200).json({ success: false, message: "Failed to set background" });
+    }
+});
+
 app.post(
     "/api/upload",
     requireLogin,
@@ -159,6 +168,19 @@ app.post(
 );
 
 app.post("/api/desktop/swap", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const uuid = req.auth.id;
+        const { first, second } = req.body;
+
+        const result = await FileManagerService.swap_items(first, second, uuid);
+        if (result.success) return res.status(200).json({});
+        return res.status(400).json({});
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.post("/api/desktop/swap/experimental", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const uuid = req.auth.id;
         const { first, second } = req.body;
