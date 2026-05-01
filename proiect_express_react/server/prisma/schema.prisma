@@ -35,7 +35,7 @@ model DesktopIcon {
   cell      Int
   userId    String
 
-  user            User   @relation("UserIcons", fields: [userId], references: [id], onUpdate: NoAction)
+  user            User   @relation("UserIcons", fields: [userId], references: [uuid], onUpdate: NoAction)
   backgroundUser  User?  @relation("UserBackground")
 
   @@unique([userId, filename])

@@ -11,9 +11,9 @@ import cookieParser from "cookie-parser";
 import ms from "ms";
 import { AuthService } from "./services/AuthService.js";
 import path from "node:path";
-import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import morgan from "morgan";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
@@ -31,6 +31,7 @@ const bindAddress = process.env.BIND_ADDRESS || (isProd ? "0.0.0.0" : "127.0.0.1
 app.set("trust proxy", 1);
 
 app.use(helmet());
+app.use(morgan("dev"));
 
 app.use(
     cors({
@@ -57,172 +58,129 @@ app.get("/", VisitCounter, (req: Request, res: Response) => {
     res.send("hello world");
 });
 
-app.post("/api/register", authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+app.post("/api/register", authLimiter, async (req: Request, res: Response) => {
     if (isProd) return res.status(503).json({ success: false, message: "Registration is currently disabled" });
-    try {
-        const result = await DBService.registerUser(req);
-        if (!result.success) {
-            return res.status(400).json({ success: false, message: result.message });
-        }
-        return res.status(200).json({ success: true, message: "yay" });
-    } catch (error) {
-        next(error); // Pass to global error handler
+    const result = await DBService.registerUser(req);
+    if (!result.success) {
+        return res.status(400).json({ success: false, message: result.message });
     }
+    return res.status(200).json({ success: true, message: "yay" });
 });
 
-app.post("/api/login", authLimiter, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const result = await DBService.loginUser(req);
-        if (!result.success) {
-            return res.status(401).json({ success: false, message: "Invalid credentials" }); // Changed 400 to 401 Unauthorized
-        }
-
-        if (result.refreshToken) {
-            res.cookie("refreshToken", result.refreshToken, {
-                httpOnly: true,
-                secure: isProd || process.env.SECURE_COOKIE === "true",
-                sameSite: isProd ? "none" : "lax", // Note: 'none' requires 'secure: true' to work in browsers!
-                maxAge: ms("7d"),
-            });
-        }
-
-        return res.status(200).json({ success: true, token: result.token });
-    } catch (error) {
-        next(error);
+app.post("/api/login", authLimiter, async (req: Request, res: Response) => {
+    const result = await DBService.loginUser(req);
+    if (!result.success) {
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
-});
 
-app.post("/api/refresh", async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const refreshToken = req.cookies.refreshToken;
-        if (!refreshToken) return res.status(401).json({ success: false, message: "No refresh token provided" });
-
-        const decoded = AuthService.verifyToken(refreshToken);
-        if (!decoded) return res.status(401).json({ success: false, message: "Invalid refresh token" });
-
-        const token = AuthService.generateToken({ id: decoded.id });
-        return res.status(200).json({ success: true, token: token });
-    } catch (error) {
-        next(error);
-    }
-});
-
-app.post("/api/logout", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const result = await DBService.logoutUser(req);
-
-        res.clearCookie("refreshToken", {
+    if (result.refreshToken) {
+        res.cookie("refreshToken", result.refreshToken, {
             httpOnly: true,
             secure: isProd || process.env.SECURE_COOKIE === "true",
             sameSite: isProd ? "none" : "lax",
+            maxAge: ms("7d"),
         });
+    }
 
-        if (!result.success) {
-            return res.status(400).json({ success: false, message: "Logout failed" });
-        }
-        return res.status(200).json({ success: true });
-    } catch (error) {
-        next(error);
+    return res.status(200).json({ success: true, token: result.token });
+});
+
+app.post("/api/refresh", async (req: Request, res: Response) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.status(401).json({ success: false, message: "No refresh token provided" });
+
+    const decoded = AuthService.verifyToken(refreshToken);
+    if (!decoded) return res.status(401).json({ success: false, message: "Invalid refresh token" });
+
+    const token = AuthService.generateToken({ id: decoded.id });
+    return res.status(200).json({ success: true, token: token });
+});
+
+app.post("/api/logout", requireLogin, async (req: Request, res: Response) => {
+    const result = await DBService.logoutUser(req);
+
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: isProd || process.env.SECURE_COOKIE === "true",
+        sameSite: isProd ? "none" : "lax",
+    });
+
+    if (!result.success) {
+        return res.status(400).json({ success: false, message: "Logout failed" });
+    }
+    return res.status(200).json({ success: true });
+});
+
+app.get("/api/background", requireLogin, async (req: Request, res: Response) => {
+    const result = await DBService.getUserBackground(req);
+    if (result.success && !result.data) {
+        return res.status(200).json({ success: true, message: "User has no background set" });
+    }
+    if (result.success && result.data) {
+        return res.status(200).json({ success: true, backgroundUuid: result.data.backgroundUuid });
+    } else {
+        return res.status(400).json({ success: false, message: "Could not find background" });
     }
 });
 
-app.post("/api/background/", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
+app.post("/api/background", requireLogin, async (req: Request, res: Response) => {
     const result = await DBService.setUserBackground(req);
+    console.log("Api Background: ", result);
     if (result.success) {
         return res.status(200).json({ success: true, message: "Background set successfully" });
     } else {
-        return res.status(200).json({ success: false, message: "Failed to set background" });
+        return res.status(400).json({ success: false, message: "Failed to set background" });
     }
 });
 
-app.post(
-    "/api/upload",
-    requireLogin,
-    uploadService.single("myFile"),
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const file = req.file;
-            if (!file) return res.status(400).json({ success: false, message: "No file upload" });
+app.post("/api/upload", requireLogin, uploadService.single("myFile"), async (req: Request, res: Response) => {
+    const file = req.file;
+    if (!file) return res.status(400).json({ success: false, message: "No file upload" });
 
-            const uuid = req.auth.id;
-            const cell = parseInt(req.body.index, 10);
+    const uuid = req.auth.id;
+    const cell = parseInt(req.body.index, 10);
 
-            const metadata = {
-                id: path.parse(file.filename).name,
-                filename: file.originalname,
-                fileType: file.mimetype,
-                bytes: file.size,
-                cell: cell,
-            };
+    const metadata = {
+        id: path.parse(file.filename).name,
+        filename: file.originalname,
+        fileType: file.mimetype,
+        bytes: file.size,
+        cell: cell,
+    };
 
-            const result = await FileManagerService.register_file(uuid, metadata);
-            if (result.success && result.data) {
-                return res.status(200).json(result.data);
-            } else {
-                return res.status(400).json({ success: false, message: "File registration failed" });
-            }
-        } catch (error) {
-            next(error);
-        }
-    },
-);
-
-app.post("/api/desktop/swap", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const uuid = req.auth.id;
-        const { first, second } = req.body;
-
-        const result = await FileManagerService.swap_items(first, second, uuid);
-        if (result.success) return res.status(200).json({});
-        return res.status(400).json({});
-    } catch (error) {
-        next(error);
+    const result = await FileManagerService.register_file(uuid, metadata);
+    if (result.success && result.data) {
+        return res.status(200).json(result.data);
+    } else {
+        return res.status(400).json({ success: false, message: "File registration failed" });
     }
 });
 
-app.post("/api/desktop/swap/experimental", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const uuid = req.auth.id;
-        const { first, second } = req.body;
+app.post("/api/desktop/swap", requireLogin, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+    const { first, second } = req.body;
 
-        const result = await FileManagerService.swap_items(first, second, uuid);
-        if (result.success) return res.status(200).json({});
-        return res.status(400).json({});
-    } catch (error) {
-        next(error);
-    }
+    const result = await FileManagerService.swap_items(first, second, uuid);
+    if (result.success) return res.status(200).json({});
+    return res.status(400).json({});
 });
 
-app.get("/api/desktop", VisitCounter, requireLogin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const uuid = req.auth.id;
-        const items = await FileManagerService.getUserDesktop(uuid);
-        if (!items) return res.status(400).json({});
-        return res.status(200).json(items);
-    } catch (error) {
-        next(error);
-    }
+app.get("/api/desktop", VisitCounter, requireLogin, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+    const items = await FileManagerService.getUserDesktop(uuid);
+    if (!items) return res.status(400).json({});
+    console.log("Got the following items!: ", items);
+    return res.status(200).json(items);
 });
 
-app.get("/api/download/:filename", requireLogin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const uuid = req.auth.id;
-        // path.basename prevents Directory Traversal Attacks (e.g. users requesting ../../../etc/passwd)
-        const fileId = path.basename(req.params.filename);
-        const userDir = path.join(process.cwd(), "uploads", uuid);
-
-        if (!fs.existsSync(userDir)) return res.status(404).json({ message: "User directory not found" });
-
-        const files = fs.readdirSync(userDir);
-        const actualFile = files.find((f) => path.parse(f).name === fileId);
-
-        if (!actualFile) return res.status(404).json({ message: "File not found" });
-
-        const filePath = path.join(userDir, actualFile);
-        res.sendFile(filePath);
-    } catch (error) {
-        next(error);
+app.get("/api/download/:filename", requireLogin, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+    const fileId = path.basename(req.params.filename);
+    const result = await FileManagerService.getFilePath(uuid, fileId);
+    if (!result.success || !result.filePath) {
+        return res.status(404).json({ message: result.message });
     }
+    res.sendFile(result.filePath);
 });
 
 // --- GLOBAL ERROR HANDLER ---

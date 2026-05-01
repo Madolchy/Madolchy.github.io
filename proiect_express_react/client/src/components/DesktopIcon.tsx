@@ -14,7 +14,7 @@ const DesktopIcon = React.memo(
             if (!data?.id) return;
 
             const fetchThumbnail = async () => {
-                const blob = await ThumbnailService.getThumbnail(data?.id);
+                const blob = await ThumbnailService.getThumbnail(data?.id, data?.fileType);
                 if (blob) {
                     const url = getUrl(data?.id, blob);
                     setThumbUrl(url);

@@ -21,7 +21,7 @@ export const apiClient = ky.create({
                 if (response.status === 401 && retryCount === 0) {
                     try {
                         const { token } = await ky
-                            .post(`${BASE_URL}refresh`, { credentials: "include" })
+                            .post(`${BASE_URL}/refresh`, { credentials: "include" })
                             .json<{ token: string }>();
 
                         const headers = new Headers(request.headers);

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { FileManagerService } from '../services/FileManagerService';
-import { useBlob } from '../context/BlobContext';
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { FileManagerService } from "../services/FileManagerService";
+import { useBlob } from "../context/BlobContext";
 
 const ImagePreview = ({ url }: { url: string }) => (
     <img src={url} className="w-100 h-100 object-fit-contain" alt="Preview" />
@@ -12,12 +12,17 @@ const TextPreview = ({ blob }: { blob: Blob }) => {
 
     useEffect(() => {
         if (blob) {
-            blob.text().then(setText).catch(err => console.error("Failed to read text blob:", err));
+            blob.text()
+                .then(setText)
+                .catch((err) => console.error("Failed to read text blob:", err));
         }
     }, [blob]);
 
     return (
-        <div className="w-100 h-100 p-3 overflow-auto bg-white text-dark" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
+        <div
+            className="w-100 h-100 p-3 overflow-auto bg-white text-dark"
+            style={{ whiteSpace: "pre-wrap", fontFamily: "monospace" }}
+        >
             {text}
         </div>
     );
@@ -31,34 +36,36 @@ interface FilePreviewProps {
 }
 
 const previewMap: Record<string, React.ComponentType<FilePreviewProps>> = {
-    'image/png': ImagePreview,
-    'image/jpeg': ImagePreview,
-    'image/jpg': ImagePreview,
-    'image/gif': ImagePreview,
-    'text/plain': TextPreview,
+    "image/png": ImagePreview,
+    "image/jpeg": ImagePreview,
+    "image/jpg": ImagePreview,
+    "image/gif": ImagePreview,
+    "text/plain": TextPreview,
 };
 
-export const FileFactory = ({ uuid, thumbnail }: { uuid: string, thumbnail?: Blob }) => {
+export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileType: string; thumbnail?: Blob }) => {
     const { getUrl, revokeUrl } = useBlob();
 
-    const { data: blob, isLoading, isError } = useQuery({
-        queryKey: ['file', uuid],
+    const {
+        data: blob,
+        isLoading,
+        isError,
+    } = useQuery({
+        queryKey: ["file", uuid],
         queryFn: () => FileManagerService.getRawFile(uuid),
         enabled: !!uuid,
     });
 
     useEffect(() => {
         return () => {
-            console.log("Cleanup ran!")
-            revokeUrl(uuid + "_full")
-        }
-    }, [revokeUrl, uuid])
+            console.log("Cleanup ran!");
+            revokeUrl(uuid + "_full");
+        };
+    }, [revokeUrl, uuid]);
 
     // while image is grabbed from server, show thumbnail
     if (isLoading && thumbnail) {
-        return (
-            <ImagePreview url={getUrl(uuid, thumbnail)} />
-        );
+        return <ImagePreview url={getUrl(uuid, thumbnail)} />;
     }
 
     // anything else or if thumbnail missing
@@ -78,7 +85,7 @@ export const FileFactory = ({ uuid, thumbnail }: { uuid: string, thumbnail?: Blo
 
     const fileUrl = getUrl(uuid + "_full", blob);
 
-    const PreviewComponent = previewMap[blob.type] || DefaultPreview;
+    const PreviewComponent = previewMap[fileType] || DefaultPreview;
 
     return <PreviewComponent url={fileUrl} blob={blob} />;
 };

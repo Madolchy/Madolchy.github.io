@@ -9,26 +9,27 @@ export function useBackgroundManager(contextActiveId: number | null, gridData: a
     const { getUrl } = useBlob();
     const queryClient = useQueryClient();
 
-    const { data: backgroundData } = useQuery({
+    // later will add t his inside of the user data check, when ill display settings etc
+    const { data: backgroundData, isError } = useQuery({
         queryKey: ["background"],
-        queryFn: async () => await db.getBackground(),
+        queryFn: async () => await FileManagerService.getUserBackground(),
     });
 
     const backgroundUrl = useMemo(() => {
         if (!backgroundData?.backgroundBlob) return null;
 
-        return getUrl(backgroundData.uuid + "_full", backgroundData.backgroundBlob);
+        return getUrl(backgroundData.backgroundUuid + "_full", backgroundData.backgroundBlob);
     }, [backgroundData, getUrl]);
 
     const setBackgroundMutation = useMutation({
         mutationFn: async (uuid: string) => {
             const blob = await FileManagerService.getRawFile(uuid);
-            if (!blob) throw new Error("Failed to retrieve file for background");
+            if (!blob) throw new Error("File not found");
 
-            await Promise.all([
-                db.saveBackground(uuid, blob),
-                apiClient.post("/background", { json: { backgroundUuid: uuid } }),
-            ]);
+            await apiClient.post("/background", { json: { backgroundUuid: uuid } });
+
+            await db.saveBackground(uuid, blob);
+
             return { uuid, blob };
         },
         onSuccess: () => {

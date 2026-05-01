@@ -24,7 +24,7 @@ function loadImage(file: Blob): Promise<HTMLImageElement> {
     });
 }
 
-async function generateThumbnail(file: Blob): Promise<Blob | null> {
+async function generateThumbnail(file: Blob, mimeType: string): Promise<Blob | null> {
     try {
         const img = await loadImage(file);
 
@@ -42,7 +42,7 @@ async function generateThumbnail(file: Blob): Promise<Blob | null> {
         toCanvas.height = targetHeight;
 
         await pica.resize(fromCanvas, toCanvas);
-        const blob = await pica.toBlob(toCanvas, file.type || "image/jpeg", 0.9);
+        const blob = await pica.toBlob(toCanvas, mimeType || "image/jpeg", 0.9);
 
         return blob;
     } catch (error) {
@@ -52,7 +52,7 @@ async function generateThumbnail(file: Blob): Promise<Blob | null> {
 }
 
 export const ThumbnailService = {
-    getThumbnail: async (uuid: string): Promise<Blob | null> => {
+    getThumbnail: async (uuid: string, fileType?: string): Promise<Blob | null> => {
         const cached = await db.getThumbnail(uuid);
         if (cached) return cached;
 
@@ -67,10 +67,10 @@ export const ThumbnailService = {
                 });
                 if (!fileBlob) return null;
 
-                const fileType = fileBlob.type;
-                if (!fileType.startsWith("image/")) return null;
+                const mimeType = fileType || fileBlob.type;
+                if (!mimeType || !mimeType.startsWith("image/")) return null;
 
-                const thumbnail = await generateThumbnail(fileBlob);
+                const thumbnail = await generateThumbnail(fileBlob, mimeType);
                 if (thumbnail) {
                     await db.saveThumbnail(uuid, thumbnail);
                 }

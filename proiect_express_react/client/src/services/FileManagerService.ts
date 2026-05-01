@@ -1,4 +1,5 @@
 import { apiClient } from "../client/apiClient";
+import { db } from "../store/db";
 
 export const FileManagerService = {
     getUserDesktop: async (dir: string) => {
@@ -12,6 +13,22 @@ export const FileManagerService = {
             console.error("Failed to get desktop: ", error);
             return undefined;
         }
+    },
+
+    getUserBackground: async () => {
+        const response = await apiClient.get("background");
+        if (!response.ok) return undefined;
+        const { backgroundUuid } = await response.json();
+
+        const cached = await db.getBackground();
+        if (cached?.backgroundBlob && cached.uuid === backgroundUuid) {
+            return { backgroundUuid: cached.uuid, backgroundBlob: cached.backgroundBlob };
+        }
+
+        const backgroundBlob = await FileManagerService.getRawFile(backgroundUuid);
+        await db.saveBackground(backgroundUuid, backgroundBlob);
+
+        return { backgroundUuid, backgroundBlob };
     },
 
     getRawFile: async (fileUuid: string): Promise<Blob | undefined> => {

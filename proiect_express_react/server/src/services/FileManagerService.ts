@@ -1,9 +1,10 @@
-import { meta } from 'zod/v4/core';
-import { prisma } from '../client/prisma.js';
-import { PrismaClient } from '../generated/prisma/client.js';
-import { DesktopIconUncheckedCreateInputSchema } from '../generated/zod/index.js';
-import z from 'zod';
-
+import { meta } from "zod/v4/core";
+import { prisma } from "../client/prisma.js";
+import { PrismaClient } from "../generated/prisma/client.js";
+import { DesktopIconUncheckedCreateInputSchema } from "../generated/zod/index.js";
+import z from "zod";
+import path from "node:path";
+import fs from "node:fs";
 
 const UploadPayloadSchema = z.object({
     id: z.string().optional(),
@@ -13,76 +14,75 @@ const UploadPayloadSchema = z.object({
     cell: z.number().int(),
 });
 
-
 const cellSchema = z.number().int().min(0).max(255);
-
 
 export const FileManagerService = {
     register_file: async (uuid, metadata) => {
-        console.log(metadata)
+        console.log(metadata);
         const validData = UploadPayloadSchema.safeParse(metadata);
         if (!validData.success) {
-            return { success: false, message: "Got a invalid metadata" }
+            return { success: false, message: "Got a invalid metadata" };
         }
 
         const data = validData.data;
+        console.log("Data id is: ", data);
 
         try {
-            const user = await prisma.user.findUnique({
-                where: { uuid: uuid },
-                select: { id: true }
-            });
-            if (!user) {
-                return { success: false, message: "User not found" };
-            }
-
             const result = await prisma.desktopIcon.create({
                 data: {
-                    id: data.id,
+                    ...(data.id ? { id: data.id } : {}),
                     filename: data.filename,
                     fileType: data.fileType,
                     bytes: data.bytes,
                     cell: data.cell,
-                    userId: user.id
-                }
-            })
-            return { success: true, data: result }
-
+                    user: {
+                        connect: { uuid: uuid },
+                    },
+                },
+            });
+            return { success: true, data: result };
+        } catch (e) {
+            return { success: false, message: "Failed to create the desktop icon", error: e };
         }
-        catch (e) {
-            return { success: false, message: "Failed to create the desktop icon", error: e }
-        }
-
     },
 
-    getUserDesktop: async (uuid) => {
+    getUserDesktop: async (uuid: string) => {
         try {
-            const user = await prisma.user.findUnique({
-                where: { uuid: uuid },
-                select: { id: true }
-            });
-            if (!user) return [];
-
             const icons = await prisma.desktopIcon.findMany({
                 where: {
-                    userId: user.id
-                }
-            })
+                    userId: uuid,
+                },
+            });
 
-            return icons
+            return icons;
+        } catch (error) {
+            console.error("Error fetching icons: ", error);
+            return undefined;
         }
-        catch (error) {
-            console.error("Error fetching: ", error)
-            return undefined
-        }
-
     },
+    getFilePath: async (uuid: string, fileId: string) => {
+        const safeFileId = path.basename(fileId);
+        const userDir = path.join(process.cwd(), "uploads", uuid);
 
+        if (!fs.existsSync(userDir)) {
+            return { success: false, message: "User directory not found" };
+        }
+
+        const files = fs.readdirSync(userDir);
+        const actualFile = files.find((f) => path.parse(f).name === safeFileId);
+
+        if (!actualFile) {
+            return { success: false, message: "File not found" };
+        }
+
+        const filePath = path.join(userDir, actualFile);
+        return { success: true, filePath };
+    },
 
     swap_items: async (firstCellPayload, secondCellPayload, userUuid) => {
         const [validFirst, validSecond] = [
             cellSchema.safeParse(firstCellPayload),
-            cellSchema.safeParse(secondCellPayload)
+            cellSchema.safeParse(secondCellPayload),
         ];
 
         if (!validFirst.success || !validSecond.success) {
@@ -95,7 +95,7 @@ export const FileManagerService = {
         try {
             const user = await prisma.user.findUnique({
                 where: { uuid: userUuid },
-                select: { id: true }
+                select: { id: true },
             });
             if (!user) {
                 return { success: false, message: "User not found" };
@@ -103,10 +103,10 @@ export const FileManagerService = {
             const userId = user.id;
 
             const icon1 = await prisma.desktopIcon.findFirst({
-                where: { userId: userId, cell: firstCell }
+                where: { userId: userId, cell: firstCell },
             });
             const icon2 = await prisma.desktopIcon.findFirst({
-                where: { userId: userId, cell: secondCell }
+                where: { userId: userId, cell: secondCell },
             });
 
             if (!icon1) {
@@ -116,33 +116,31 @@ export const FileManagerService = {
             if (!icon2) {
                 await prisma.desktopIcon.update({
                     where: { id: icon1.id },
-                    data: { cell: secondCell }
+                    data: { cell: secondCell },
                 });
             } else {
                 const tempCell = -Math.floor(Math.random() * 1000000) - 1;
 
                 await prisma.desktopIcon.update({
                     where: { id: icon1.id },
-                    data: { cell: tempCell }
+                    data: { cell: tempCell },
                 });
 
                 await prisma.desktopIcon.update({
                     where: { id: icon2.id },
-                    data: { cell: firstCell }
+                    data: { cell: firstCell },
                 });
 
                 await prisma.desktopIcon.update({
                     where: { id: icon1.id },
-                    data: { cell: secondCell }
+                    data: { cell: secondCell },
                 });
             }
 
             return { success: true, data: {} };
-
         } catch (error) {
             console.error("Move/Swap transaction failed:", error);
             return { success: false, message: "Failed to update layout." };
         }
-    }
-
-}
+    },
+};

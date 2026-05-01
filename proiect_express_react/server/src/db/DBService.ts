@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "../client/prisma.js";
 import { AuthService } from "../services/AuthService.js";
+import { FileManagerService } from "../services/FileManagerService.js";
 
 export const SignupRequestSchema = z.object({
     name: z.string().min(2),
@@ -73,6 +74,46 @@ export const DBService = {
 
     logoutUser: async () => {},
 
+    getUserBackground: async (req: Request) => {
+        const uuid = req.auth.id;
+
+        try {
+            const user = await prisma.user.findUnique({
+                where: { uuid: uuid },
+                select: {
+                    backgroundIcon: {
+                        select: {
+                            id: true,
+                            filename: true,
+                        },
+                    },
+                },
+            });
+
+            if (!user) {
+                return { success: false, message: "User not found" };
+            }
+
+            if (!user.backgroundIcon) {
+                return { success: true, message: "User has no background set", data: null };
+            }
+
+            const backgroundPath = await FileManagerService.getFilePath(uuid, user.backgroundIcon.id);
+            if (!backgroundPath.success) {
+                return { success: false, message: "The specified background is not on the server." };
+            }
+
+            return {
+                success: true,
+                data: {
+                    backgroundUuid: user.backgroundIcon.id,
+                    backgroundPath: backgroundPath.filePath,
+                },
+            };
+        } catch (e) {
+            return { success: false, message: "Failed to retrieve background", error: e };
+        }
+    },
     setUserBackground: async (req: Request) => {
         const uuid = req.auth.id;
         const { backgroundUuid } = req.body;
@@ -82,6 +123,7 @@ export const DBService = {
         }
 
         try {
+            console.log("Trying to get icon: ", backgroundUuid, " by user: ", uuid);
             const icon = await prisma.desktopIcon.findFirst({
                 where: {
                     id: backgroundUuid,
