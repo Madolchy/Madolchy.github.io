@@ -1,5 +1,6 @@
 import z from "zod";
 import { apiClient } from "../client/apiClient";
+import type { LoginFormInputs } from "../types/login";
 
 export const loginUser = async (credentials: LoginFormInputs) => {
     try {
