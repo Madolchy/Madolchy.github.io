@@ -8,7 +8,7 @@ if (!JWT_SECRET) {
 
 export const AuthService = {
     generateToken: (payload: { id: string }) => {
-        return jwt.sign({ ...payload, tokenType: "active" }, JWT_SECRET as jwt.Secret, { expiresIn: "45m" });
+        return jwt.sign({ ...payload, tokenType: "active" }, JWT_SECRET as jwt.Secret, { expiresIn: "10s" });
     },
 
     generateRefreshToken: (payload: { id: string }) => {

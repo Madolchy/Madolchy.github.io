@@ -1,66 +1,16 @@
-import { useNavigate, Link } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { AuthService } from '../services/AuthService';
-import { apiClient } from '../client/apiClient';
-
-const LoginSchema = z.object({
-    email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters long"),
-    rememberMe: z.boolean().optional(),
-});
-
-type LoginFormInputs = z.infer<typeof LoginSchema>;
-
-const loginUser = async (credentials: LoginFormInputs) => {
-    try {
-        const data = await apiClient.post('login', {
-            json: credentials,
-        }).json<any>();
-
-        if (!data.success) {
-            throw new Error("Backend Error");
-        }
-
-        return data;
-    } catch (error: any) {
-        throw new Error(error?.message || "Internal Server Error");
-    }
-};
+import { Link } from "react-router-dom";
+import { useLogin } from "../hooks/useLogin";
 
 export default function Login() {
-    const navigate = useNavigate();
-
-    // 3. Initialize React Hook Form with Zod
     const {
         register,
         handleSubmit,
-        formState: { errors }
-    } = useForm<LoginFormInputs>({
-        resolver: zodResolver(LoginSchema),
-        defaultValues: {
-            email: '',
-            password: '',
-            rememberMe: false
-        }
-    });
-
-    const loginMutation = useMutation({
-        mutationFn: loginUser,
-        onSuccess: (data) => {
-            if (data.token) {
-                AuthService.addToken(data.token);
-            }
-
-            navigate('/desktop');
-        },
-    });
-
-    const onSubmit = (validData: LoginFormInputs) => {
-        loginMutation.mutate(validData);
-    };
+        formState: { errors },
+        onSubmit,
+        isLoading,
+        isError,
+        error,
+    } = useLogin();
 
     return (
         <section className="bg-primary min-vh-100 d-flex flex-column justify-content-center p-3 p-md-4 p-xl-5">
@@ -73,34 +23,34 @@ export default function Login() {
                                     <div className="col-12">
                                         <div className="mb-5">
                                             <h2 className="h3">Sign In</h2>
-                                            <h3 className="fs-6 fw-normal text-secondary m-0">Enter your details to log in to your account</h3>
+                                            <h3 className="fs-6 fw-normal text-secondary m-0">
+                                                Enter your details to log in to your account
+                                            </h3>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Display Backend API Errors from TanStack Query */}
-                                {loginMutation.isError && (
+                                {isError && (
                                     <div className="alert alert-danger py-2" role="alert">
-                                        {loginMutation.error.message}
+                                        {error?.message || "An error occurred during login."}
                                     </div>
                                 )}
 
-                                {/* Wrap the form in React Hook Form's handleSubmit */}
                                 <form onSubmit={handleSubmit(onSubmit)}>
                                     <div className="row gy-3 overflow-hidden">
                                         <div className="col-12">
                                             <div className="form-floating mb-1">
                                                 <input
                                                     type="email"
-                                                    // Add dynamic class if there's an error for standard Bootstrap red styling
-                                                    className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                                    className={`form-control ${errors.email ? "is-invalid" : ""}`}
                                                     id="email"
                                                     placeholder="name@example.com"
-                                                    {...register('email')} // Replaces value & onChange
+                                                    {...register("email")}
                                                 />
-                                                <label className="form-label" htmlFor="email">Email</label>
+                                                <label className="form-label" htmlFor="email">
+                                                    Email
+                                                </label>
                                             </div>
-                                            {/* Zod Validation Error Message */}
                                             {errors.email && (
                                                 <small className="text-danger ps-2">{errors.email.message}</small>
                                             )}
@@ -110,14 +60,15 @@ export default function Login() {
                                             <div className="form-floating mb-1">
                                                 <input
                                                     type="password"
-                                                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                                    className={`form-control ${errors.password ? "is-invalid" : ""}`}
                                                     id="password"
                                                     placeholder="Password"
-                                                    {...register('password')}
+                                                    {...register("password")}
                                                 />
-                                                <label className="form-label" htmlFor="password">Password</label>
+                                                <label className="form-label" htmlFor="password">
+                                                    Password
+                                                </label>
                                             </div>
-                                            {/* Zod Validation Error Message */}
                                             {errors.password && (
                                                 <small className="text-danger ps-2">{errors.password.message}</small>
                                             )}
@@ -129,7 +80,7 @@ export default function Login() {
                                                     className="form-check-input"
                                                     type="checkbox"
                                                     id="rememberMe"
-                                                    {...register('rememberMe')}
+                                                    {...register("rememberMe")}
                                                 />
                                                 <label className="form-check-label text-secondary" htmlFor="rememberMe">
                                                     Remember me
@@ -142,10 +93,9 @@ export default function Login() {
                                                 <button
                                                     className="btn bsb-btn-2xl btn-primary"
                                                     type="submit"
-                                                    // Disable button if loading or if there are frontend errors
-                                                    disabled={loginMutation.isPending}
+                                                    disabled={isLoading}
                                                 >
-                                                    {loginMutation.isPending ? 'Logging in...' : 'Log in'}
+                                                    {isLoading ? "Logging in..." : "Log in"}
                                                 </button>
                                             </div>
                                         </div>
@@ -156,7 +106,10 @@ export default function Login() {
                                     <div className="col-12">
                                         <hr className="mt-5 mb-4 border-secondary-subtle" />
                                         <p className="m-0 text-secondary text-center">
-                                            Don't have an account? <Link to="/register" className="link-primary text-decoration-none">Sign up</Link>
+                                            Don't have an account?{" "}
+                                            <Link to="/register" className="link-primary text-decoration-none">
+                                                Sign up
+                                            </Link>
                                         </p>
                                     </div>
                                 </div>

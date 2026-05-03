@@ -87,6 +87,7 @@ app.post("/api/login", authLimiter, async (req: Request, res: Response) => {
 
 app.post("/api/refresh", async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken;
+    console.log("Refresh Token is: ", refreshToken);
     if (!refreshToken) return res.status(401).json({ success: false, message: "No refresh token provided" });
 
     const decoded = AuthService.verifyToken(refreshToken);

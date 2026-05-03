@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { AuthService } from "../services/AuthService";
 
 export function Authenticated({ children }) {
+    console.log("Does this run everytime?");
     const hasToken = AuthService.hasToken();
 
     if (!hasToken) {
@@ -12,6 +13,7 @@ export function Authenticated({ children }) {
 }
 
 export function Unauthenticated({ children }) {
+    console.log("Does this run everytime?");
     const hasToken = AuthService.hasToken();
 
     if (hasToken) {

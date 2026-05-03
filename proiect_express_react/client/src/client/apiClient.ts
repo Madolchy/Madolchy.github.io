@@ -20,6 +20,7 @@ export const apiClient = ky.create({
             async ({ request, response, retryCount }) => {
                 if (response.status === 401 && retryCount === 0) {
                     try {
+                        console.log("Trying to get refresh token");
                         const { token } = await ky
                             .post(`${BASE_URL}/refresh`, { credentials: "include" })
                             .json<{ token: string }>();
