@@ -4,7 +4,7 @@ import { FileManagerService } from "../services/FileManagerService";
 import { useBlob } from "../context/BlobContext";
 
 const ImagePreview = ({ url }: { url: string }) => (
-    <img src={url} className="w-100 h-100 object-fit-contain" alt="Preview" />
+    <img src={url} className="w-full h-full object-contain" alt="Preview" />
 );
 
 const TextPreview = ({ blob }: { blob: Blob }) => {
@@ -20,7 +20,7 @@ const TextPreview = ({ blob }: { blob: Blob }) => {
 
     return (
         <div
-            className="w-100 h-100 p-3 overflow-auto bg-white text-dark"
+            className="w-full h-full p-3 overflow-auto bg-card text-card-foreground"
             style={{ whiteSpace: "pre-wrap", fontFamily: "monospace" }}
         >
             {text}
@@ -71,9 +71,9 @@ export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileT
     // anything else or if thumbnail missing
     if (isLoading && !thumbnail) {
         return (
-            <div className="w-100 h-100 d-flex align-items-center justify-content-center">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+            <div className="w-full h-full flex items-center justify-center">
+                <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" role="status">
+                    <span className="sr-only">Loading...</span>
                 </div>
             </div>
         );

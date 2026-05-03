@@ -39,17 +39,16 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
 
             // enableUserSelectHack={false}
         >
-            <div className="border border-dark bg-white h-100 d-flex flex-column shadow-sm">
+            <div className="border bg-card h-full flex flex-col shadow-sm">
                 <div
-                    className="window-header bg-primary text-white px-2 d-flex justify-content-between align-items-center"
+                    className="window-header bg-primary text-primary-foreground px-2 flex justify-between items-center"
                     style={{ cursor: "grab" }}
                 >
-                    <span className="text-truncate" style={{ fontSize: "0.9rem" }}>
+                    <span className="truncate" style={{ fontSize: "0.9rem" }}>
                         {title || data?.name || "Window"}
                     </span>
                     <button
-                        className="btn btn-sm btn-danger p-0 ms-2"
-                        style={{ width: "20px", height: "20px", lineHeight: "1" }}
+                        className="p-0 ms-2 size-5 flex items-center justify-center rounded text-destructive hover:bg-destructive/20 text-sm leading-none"
                         onClick={(e) => {
                             e.stopPropagation();
                             onClose(id);
@@ -59,7 +58,7 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
                     </button>
                 </div>
 
-                <div className="flex-grow-1 overflow-hidden bg-light">
+                <div className="flex-1 overflow-hidden bg-muted">
                     <FileFactory uuid={data.id} thumbnail={data?.thumbnail} fileType={data?.fileType} />
                 </div>
             </div>

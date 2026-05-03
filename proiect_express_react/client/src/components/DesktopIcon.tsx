@@ -30,7 +30,7 @@ const DesktopIcon = React.memo(
         return (
             <div
                 id={`icon-${id}`}
-                className="position-relative text-black bg-transparent d-flex align-items-center justify-content-center"
+                className="relative text-foreground bg-transparent flex items-center justify-center"
                 draggable={false}
                 onMouseDown={(e) => {
                     e.button === 2 ? onContextMenu(e, id) : onMouseDownCallback(id, data?.id);
@@ -45,14 +45,14 @@ const DesktopIcon = React.memo(
                 }}
             >
                 <div
-                    className={`icon icon-grabbable d-flex align-items-center justify-content-center position-relative pe-none ${isActive ? "icon-highlight" : ""}`}
+                    className={`icon icon-grabbable flex items-center justify-center relative pointer-events-none ${isActive ? "icon-highlight" : ""}`}
                     style={{ zIndex: 2 }}
                 >
                     {thumbUrl ? (
                         <img
                             src={thumbUrl}
                             draggable={false}
-                            className="w-100 h-100 object-fit-contain pe-none user-select-none native-drag-none"
+                            className="w-full h-full object-contain pointer-events-none select-none native-drag-none"
                         />
                     ) : (
                         <FileIconFactory fileType={data?.fileType} />

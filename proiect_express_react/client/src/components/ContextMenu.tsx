@@ -28,11 +28,11 @@ export default function ContextMenu({
 
     return (
         <>
-            <ul className="dropdown-menu shadow" style={style} onContextMenu={(e) => e.preventDefault()}>
+            <ul className="shadow rounded-lg border bg-card p-1 min-w-[150px] text-sm" style={style} onContextMenu={(e) => e.preventDefault()}>
                 {canSetBackground && (
                     <li>
                         <button
-                            className="dropdown-item"
+                            className="w-full text-left px-3 py-1.5 rounded hover:bg-muted"
                             type="button"
                             onClick={onSetBackground}
                             onContextMenu={(e) => e.preventDefault()}
@@ -43,7 +43,7 @@ export default function ContextMenu({
                 )}
                 {!canSetBackground && (
                     <li>
-                        <span className="dropdown-item text-muted">No actions available</span>
+                        <span className="block px-3 py-1.5 text-muted-foreground">No actions available</span>
                     </li>
                 )}
             </ul>

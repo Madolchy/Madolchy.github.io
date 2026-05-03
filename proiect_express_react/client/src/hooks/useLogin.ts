@@ -6,7 +6,7 @@ import { AuthService } from "../services/AuthService";
 import { LoginSchema, type LoginFormInputs } from "../types/login";
 import { loginUser } from "../views/Login_logic";
 
-export const useLogin = () => {
+export function useLogin() {
     const navigate = useNavigate();
 
     const formMethods = useForm<LoginFormInputs>({
@@ -39,4 +39,4 @@ export const useLogin = () => {
         isError: loginMutation.isError,
         error: loginMutation.error,
     };
-};
+}

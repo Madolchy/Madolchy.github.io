@@ -6,8 +6,6 @@ import { queryClient } from "./client/queryClient.ts";
 import { BlobProvider } from "./context/BlobProvider.tsx";
 import { AppRouter } from "./router"; // Import the component
 
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(

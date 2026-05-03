@@ -6,26 +6,26 @@ export default function Navbar() {
     const [username] = useState(AuthService.getToken()?.substring(0, 30))
 
     return (
-        <nav className="tab-navbar d-flex px-2 align-items-center">
-            <div className="d-flex flex-grow-1 overflow-hidden h-100 align-items-center">
-                <div className="tab-tab d-flex align-items-center px-3 flex-grow-1">
-                    <span className="text-truncate fw-medium">Windows</span>
+        <nav className="tab-navbar flex px-2 items-center">
+            <div className="flex flex-1 overflow-hidden h-full items-center">
+                <div className="tab-tab flex items-center px-3 flex-1">
+                    <span className="truncate font-medium">Windows</span>
                 </div>
                 
-                <div className="tab-add-btn d-flex align-items-center justify-content-center ms-2 mb-1 rounded-circle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-plus" viewBox="0 0 16 16">
+                <div className="tab-add-btn flex items-center justify-center ms-2 mb-1 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                     </svg>
                 </div>
             </div>
 
-            <div className="d-flex align-items-center ms-auto ps-3">
+            <div className="flex items-center ms-auto ps-3">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"
                     height="20"
                     fill="currentColor"
-                    className="bi bi-gear gear-hover-icon nav-gear-icon"
+                    className="gear-hover-icon nav-gear-icon"
                     viewBox="0 0 16 16"
                 >
                     <path className="gear-filled" d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
