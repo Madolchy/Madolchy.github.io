@@ -11,14 +11,13 @@ import { GridContainer } from "./GridContainer";
 import ContextMenu from "./ContextMenu";
 import { useContextMenu } from "../hooks/useContextMenu";
 import { useDesktopManager } from "../hooks/useDesktopManager";
-import { useContextBuilder } from "../hooks/useContextBuilder";
 
 export default function Desktop({ onCellDrop }) {
     const [boxNumberPerRow] = useState(16);
     const { gridData, draggedBox, isLoading, isError, resetSelect, handleSelect, handleSwap } = useDesktopIcons();
     const { boxSize, containerRef, actualColumns } = useGrid(boxNumberPerRow, isLoading);
     const { windows, openWindow, closeWindow, bringToFront } = useWindowManager();
-    const { contextActiveId, contextPosition, openContext } = useContextMenu();
+    const { contextActiveId, contextPosition, openContext, closeContext } = useContextMenu();
     const { backgroundUrl, availableContextActions } = useDesktopManager(contextActiveId, gridData);
 
     if (isLoading) return <div>Loading Desktop...</div>;
@@ -52,6 +51,7 @@ export default function Desktop({ onCellDrop }) {
                 isActive={contextActiveId !== null}
                 position={contextPosition}
                 availableContextActions={availableContextActions}
+                closeContext={closeContext}
             />
 
             {windows.map((win) => (

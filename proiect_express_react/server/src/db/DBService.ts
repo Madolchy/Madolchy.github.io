@@ -19,8 +19,6 @@ export const LoginSchema = z.object({
 
 type SignupRequest = z.infer<typeof SignupRequestSchema>;
 
-const saltRounds = 10;
-
 export const DBService = {
     registerUser: async (req: Request) => {
         console.log(req.body);
@@ -30,12 +28,11 @@ export const DBService = {
         }
 
         const { password, ...publicValidData } = validationResult.data;
-        const pwHash = await bcrypt.hash(password, saltRounds);
         const uuid = uuidv4();
 
         try {
             await prisma.user.create({
-                data: { ...publicValidData, passwordHash: pwHash, uuid: uuid },
+                data: { ...publicValidData, passwordHash: password, uuid: uuid },
             });
         } catch (e) {
             return { success: false, message: "Failed to create the user", error: e };

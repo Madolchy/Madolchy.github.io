@@ -1,3 +1,5 @@
+import type { ContextAction } from "../types/context";
+
 export type ContextMenuItem = {
     key: string;
     label: string;
@@ -13,17 +15,22 @@ class ContextMenuBuilder {
         return this;
     }
 
-    withBackground(name: string, handler: () => void): this {
+    withActions(actions: ContextAction[]): this {
+        actions.forEach(({ contextName, contextAction }) => this.addItem(contextName, contextAction));
+        return this;
+    }
+
+    withBackground(handler: () => void): this {
         this.items.push({ key: "set-background", label: "Set as background", action: handler });
         return this;
     }
 
-    withMakeFolder(name: string, handler: () => void): this {
+    withMakeFolder(handler: () => void): this {
         this.items.push({ key: "make-folder", label: "Create folder", action: handler });
         return this;
     }
 
-    withDelete(name: string, handler: () => void): this {
+    withDelete(handler: () => void): this {
         this.items.push({ key: "delete", label: "Delete", action: handler });
         return this;
     }

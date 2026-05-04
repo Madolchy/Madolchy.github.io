@@ -150,4 +150,5 @@ proiect_express_react - Copy/*
 proiect_elysia/*
 proiect_express_react/server/uploads/*
 proiect_express_react/server/*.db
+proiect_express_react/server/src/generated/*
 .opencode

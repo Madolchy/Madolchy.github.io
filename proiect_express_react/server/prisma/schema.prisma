@@ -20,20 +20,23 @@ model User {
   id            String        @id @default(auto()) @db.ObjectId @map("_id")
   name          String
   email         String        @unique
+  role          String
   passwordHash  String
-  uuid          String        @unique
+  isPremium     Boolean   @default(false)
+  uuid          String    @unique
   icons         DesktopIcon[] @relation("UserIcons")
   backgroundIconId String? @unique @db.ObjectId
   backgroundIcon    DesktopIcon? @relation("UserBackground", fields: [backgroundIconId], references: [id])
 }
 
 model DesktopIcon {
-  id        String @id @default(auto()) @db.ObjectId @map("_id")
-  filename  String
-  fileType  String
-  bytes     Int
-  cell      Int
-  userId    String
+  id         String   @id @default(auto()) @db.ObjectId @map("_id")
+  filename   String
+  fileType   String
+  /// @zod.custom.use(z.number().int().gte(0).lte(1e+7))
+  bytes      Int
+  cell       Int
+  userId     String
 
   user            User   @relation("UserIcons", fields: [userId], references: [uuid], onUpdate: NoAction)
   backgroundUser  User?  @relation("UserBackground")

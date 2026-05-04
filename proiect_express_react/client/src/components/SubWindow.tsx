@@ -1,10 +1,8 @@
 import React from "react";
 import { Rnd } from "react-rnd";
-import { useBlob } from "../context/BlobContext";
-import { FileManagerService } from "../services/FileManagerService";
 import { FileFactory } from "./FileFactory";
 import "./SubWindow.css";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader } from "./ui/card";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator } from "./ui/breadcrumb";
 import { Button } from "./ui/button";
 import { X } from "lucide-react";
@@ -12,15 +10,12 @@ import { X } from "lucide-react";
 export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData, onClose, onBringToFront }) {
     const { title, zIndex, data, id } = windowData;
 
-    const defaultPosition = React.useMemo(
-        () => ({
-            x: 300,
-            y: 400,
-            width: 320,
-            height: 200,
-        }),
-        [],
-    );
+    const defaultPosition = {
+        x: 300,
+        y: 400,
+        width: 320,
+        height: 200,
+    }
 
     return (
         <Rnd
@@ -43,18 +38,19 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
             }}
             minWidth={300}
             minHeight={250}
+            onContextMenu={(e) => e.preventDefault()}
 
             // enableUserSelectHack={false}
         >
             <Card className="w-full h-full window-draggable flex flex-col p-4 overflow-hidden">
                 <CardHeader className="flex flex-row items-start justify-between p-0 mb-3 flex-none">
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>Elysia</BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>Elysia</BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <Breadcrumb className="flex-1 min-w-0">
+                            <BreadcrumbList>
+                                <BreadcrumbItem className="truncate block">
+                                    {title}
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
 
                     <Button variant="ghost" size="icon" className="h-auto p-1 -mt-1" onClick={() => onClose(id)}>
                         <X className="h-4 w-4" />

@@ -28,5 +28,6 @@ export function useContextMenu() {
         contextActiveId,
         contextPosition,
         openContext,
+        closeContext,
     };
 }
