@@ -10,7 +10,8 @@ import { useWindowManager } from "../hooks/useWindowManager";
 import { GridContainer } from "./GridContainer";
 import ContextMenu from "./ContextMenu";
 import { useContextMenu } from "../hooks/useContextMenu";
-import { useBackgroundManager } from "../hooks/useBackgroundManager";
+import { useDesktopManager } from "../hooks/useDesktopManager";
+import { useContextBuilder } from "../hooks/useContextBuilder";
 
 export default function Desktop({ onCellDrop }) {
     const [boxNumberPerRow] = useState(16);
@@ -18,10 +19,7 @@ export default function Desktop({ onCellDrop }) {
     const { boxSize, containerRef, actualColumns } = useGrid(boxNumberPerRow, isLoading);
     const { windows, openWindow, closeWindow, bringToFront } = useWindowManager();
     const { contextActiveId, contextPosition, openContext } = useContextMenu();
-    const { backgroundUrl, canSetBackground, handleSetBackground, isBackgroundSetting } = useBackgroundManager(
-        contextActiveId,
-        gridData,
-    );
+    const { backgroundUrl, availableContextActions } = useDesktopManager(contextActiveId, gridData);
 
     if (isLoading) return <div>Loading Desktop...</div>;
     if (isError || !gridData) return <div>Failed to load icons!</div>;
@@ -53,9 +51,7 @@ export default function Desktop({ onCellDrop }) {
             <ContextMenu
                 isActive={contextActiveId !== null}
                 position={contextPosition}
-                canSetBackground={canSetBackground}
-                onSetBackground={handleSetBackground}
-                isBackgroundSetting={isBackgroundSetting}
+                availableContextActions={availableContextActions}
             />
 
             {windows.map((win) => (

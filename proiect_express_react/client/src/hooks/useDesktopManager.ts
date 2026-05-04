@@ -4,8 +4,9 @@ import { FileManagerService } from "../services/FileManagerService";
 import { useBlob } from "../context/BlobContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../client/apiClient";
+import type { ContextAction } from "@/types/context";
 
-export function useBackgroundManager(contextActiveId: number | null, gridData: any) {
+export function useDesktopManager(contextActiveId: number | null, gridData: any) {
     const { getUrl } = useBlob();
     const queryClient = useQueryClient();
 
@@ -43,6 +44,7 @@ export function useBackgroundManager(contextActiveId: number | null, gridData: a
     const canSetBackground = useMemo(() => {
         if (contextActiveId === null || !gridData) return false;
         const data = gridData[contextActiveId];
+
         return !!(data && data.fileType && data.fileType.startsWith("image/"));
     }, [contextActiveId, gridData]);
 
@@ -59,10 +61,35 @@ export function useBackgroundManager(contextActiveId: number | null, gridData: a
         setBackgroundMutation.mutate(data.id);
     }, [contextActiveId, gridData, setBackgroundMutation]);
 
+    const canDelete = useMemo(() => {
+        if (contextActiveId === null || !gridData) return false;
+        const data = gridData[contextActiveId];
+
+        return !!data;
+    }, [contextActiveId, gridData]);
+    const availableContextActions = useMemo((): ContextAction[] => {
+        const actions: ContextAction[] = [];
+
+        if (canSetBackground) {
+            actions.push({
+                contextName: "Set Desktop Background",
+                contextAction: handleSetBackground,
+            });
+        }
+
+        if (canDelete) {
+            actions.push({
+                contextName: "Delete",
+                contextAction: () => console.log("e"),
+            });
+        }
+
+        return actions;
+    }, [canDelete, canSetBackground, handleSetBackground]);
+
     return {
         backgroundUrl,
-        canSetBackground,
-        handleSetBackground,
+        availableContextActions,
         isBackgroundSetting: setBackgroundMutation.isPending,
     };
 }

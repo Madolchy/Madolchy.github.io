@@ -4,7 +4,7 @@ import { FileManagerService } from "../services/FileManagerService";
 import { useBlob } from "../context/BlobContext";
 
 const ImagePreview = ({ url }: { url: string }) => (
-    <img src={url} className="w-full h-full object-contain" alt="Preview" />
+    <img src={url} className="w-full h-full object-contain" alt="Preview" draggable={false} />
 );
 
 const TextPreview = ({ blob }: { blob: Blob }) => {

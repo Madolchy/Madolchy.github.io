@@ -1,52 +1,60 @@
-import type { vec2 } from "../types/default";
+import { useMemo } from "react";
+import type { ContextAction } from "@/types/context";
+import type { vec2 } from "@/types/default";
+import { useContextBuilder } from "@/hooks/useContextBuilder";
 
 interface ContextMenuProps {
     isActive: boolean;
     position: vec2;
-    canSetBackground?: boolean;
-    onSetBackground?: () => void;
-    isBackgroundSetting?: boolean;
+    availableContextActions: ContextAction[];
 }
 
-export default function ContextMenu({
-    isActive,
-    position,
-    canSetBackground,
-    onSetBackground,
-    isBackgroundSetting,
-}: ContextMenuProps) {
+export default function ContextMenu({ isActive, position, availableContextActions }: ContextMenuProps) {
+    const items = useMemo(() => {
+        const menu = useContextBuilder();
+        availableContextActions.forEach(({ contextName, contextAction }) => {
+            menu.addItem(contextName, contextAction);
+        });
+
+        return menu.build();
+    }, [availableContextActions]);
+
     if (!isActive) return null;
 
-    const style = {
+    const style: React.CSSProperties = {
         position: "absolute",
         display: "block",
-        top: `${position.y}px`,
-        left: `${position.x}px`,
+        top: position.y,
+        left: position.x,
         zIndex: 9999,
-        minWidth: "150px",
     };
 
     return (
-        <>
-            <ul className="shadow rounded-lg border bg-card p-1 min-w-[150px] text-sm" style={style} onContextMenu={(e) => e.preventDefault()}>
-                {canSetBackground && (
-                    <li>
+        <ul
+            className="shadow-xl rounded-lg border bg-card p-1 min-w-[180px] text-sm animate-in fade-in zoom-in-95 duration-100"
+            style={style}
+            onContextMenu={(e) => e.preventDefault()}
+        >
+            {items.length > 0 ? (
+                items.map((item) => (
+                    <li key={item.key}>
                         <button
-                            className="w-full text-left px-3 py-1.5 rounded hover:bg-muted"
+                            className="w-full text-left px-3 py-1.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors"
                             type="button"
-                            onClick={onSetBackground}
-                            onContextMenu={(e) => e.preventDefault()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                item.action();
+                            }}
                         >
-                            Set as background
+                            {item.label}
                         </button>
                     </li>
-                )}
-                {!canSetBackground && (
-                    <li>
-                        <span className="block px-3 py-1.5 text-muted-foreground">No actions available</span>
-                    </li>
-                )}
-            </ul>
-        </>
+                ))
+            ) : (
+                <li>
+                    <span className="block px-3 py-1.5 text-muted-foreground italic">No actions available</span>
+                </li>
+            )}
+        </ul>
     );
 }
