@@ -24,6 +24,9 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
+        "@types/supertest": "^6.0.3",
+        "supertest": "^7.2.2",
+        "vitest": "^4.1.5",
         "@eslint/js": "^10.0.1",
         "@types/bcrypt": "^6.0.0",
         "@types/cookie-parser": "^1.4.10",
@@ -46,6 +49,7 @@
         "dev": "tsx watch src/app.ts",
         "start": "tsx src/app.ts",
         "build:client": "cd ../client && npm run build",
-        "start:prod": "npx cross-env NODE_ENV=production tsx src/app.ts"
+        "start:prod": "npx cross-env NODE_ENV=production tsx src/app.ts",
+        "test": "npx cross-env NODE_ENV=test npx prisma db push --skip-generate && npx cross-env NODE_ENV=test vitest run"
     }
 }

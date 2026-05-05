@@ -39,6 +39,12 @@ export const FileManagerService = {
         return blob;
     },
 
+    deleteFile: async (fileUuid: string): Promise<void> => {
+        const response = await apiClient.delete(`files/${fileUuid}`);
+        if (!response.ok) {
+            throw new Error("Failed to delete file");
+        }
+    },
     uploadFile: async (files, index) => {
         const formData = new FormData();
 

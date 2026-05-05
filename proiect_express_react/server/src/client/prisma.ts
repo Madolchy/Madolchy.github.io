@@ -1,4 +1,5 @@
 import { PrismaClient } from "../generated/prisma/client.js";
+import { DesktopIconSchema } from "../generated/zod/index.js";
 import bcrypt from "bcrypt";
 import { saltRounds } from "../settings.js";
 

@@ -5,7 +5,7 @@ import type { Request, Response, NextFunction } from "express";
 import { DBService } from "./db/DBService.js";
 import { uploadService } from "./services/diskStorageService.js";
 import { requireLogin } from "./middleware/RequireLogin.js";
-import { FileManagerService } from "./services/FileManagerService.js";
+import { FileManagerService } from "./tests/FileManagerService.js";
 import { VisitCounter } from "./middleware/VisitCounter.js";
 import cookieParser from "cookie-parser";
 import ms from "ms";
@@ -17,21 +17,15 @@ import morgan from "morgan";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import { isProd, port, bindAddress } from "./settings.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-const port = process.env.PORT || 3000;
-const isProd = process.env.NODE_ENV === "production";
-const bindAddress = process.env.BIND_ADDRESS || (isProd ? "0.0.0.0" : "127.0.0.1");
+export const app = express();
+const isTest = process.env.NODE_ENV === "test";
 
-// Tells Express it is behind a trusted proxy (Cloudflare)
-// and to use the real user's IP from the X-Forwarded-For header.
 app.set("trust proxy", 1);
-
-app.use(helmet());
-app.use(morgan("dev"));
 
 app.use(
     cors({
@@ -42,15 +36,19 @@ app.use(
     }),
 );
 
-// 3. Rate limiting prevents brute-force login attacks
-const authLimiter = rateLimit({
-    windowMs: ms("1m"),
-    max: 3,
-    message: { success: false, message: "Too many attempts, please try again later." },
-});
+app.use(helmet());
+app.use(morgan("dev"));
 
 app.use(express.json());
 app.use(cookieParser());
+
+const authLimiter = isTest
+    ? (req: Request, res: Response, next: NextFunction) => next()
+    : rateLimit({
+          windowMs: ms("1m"),
+          max: 3,
+          message: { success: false, message: "Too many attempts, please try again later." },
+      });
 
 // ---------- API routes ----------
 
@@ -59,7 +57,8 @@ app.get("/", VisitCounter, (req: Request, res: Response) => {
 });
 
 app.post("/api/register", authLimiter, async (req: Request, res: Response) => {
-    if (isProd) return res.status(503).json({ success: false, message: "Registration is currently disabled" });
+    if (isProd && !isTest)
+        return res.status(503).json({ success: false, message: "Registration is currently disabled" });
     const result = await DBService.registerUser(req);
     if (!result.success) {
         return res.status(400).json({ success: false, message: result.message });
@@ -90,7 +89,7 @@ app.post("/api/refresh", async (req: Request, res: Response) => {
     console.log("Refresh Token is: ", refreshToken);
     if (!refreshToken) return res.status(401).json({ success: false, message: "No refresh token provided" });
 
-    const decoded = AuthService.verifyToken(refreshToken);
+    const decoded = AuthService.verifyRefreshToken(refreshToken);
     if (!decoded) return res.status(401).json({ success: false, message: "Invalid refresh token" });
 
     const token = AuthService.generateToken({ id: decoded.id });
@@ -174,6 +173,15 @@ app.get("/api/desktop", VisitCounter, requireLogin, async (req: Request, res: Re
     return res.status(200).json(items);
 });
 
+app.delete("/api/files/:id", requireLogin, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+    const result = await FileManagerService.deleteFile(uuid, req.params.id);
+    if (!result.success) {
+        return res.status(404).json(result);
+    }
+    return res.status(200).json(result);
+});
+
 app.get("/api/download/:filename", requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
     const fileId = path.basename(req.params.filename);
@@ -188,14 +196,4 @@ app.get("/api/download/:filename", requireLogin, async (req: Request, res: Respo
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error("Unhandled Server Error:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
-});
-
-// --- START THE SERVER ---
-app.listen(Number(port), bindAddress, (err?: Error) => {
-    if (err) {
-        console.error("Error starting server:", err);
-        process.exit(1);
-    }
-    console.log(`Server is running in ${isProd ? "PRODUCTION" : "DEVELOPMENT"} mode.`);
-    console.log(`Listening on http://${bindAddress}:${port}`);
 });

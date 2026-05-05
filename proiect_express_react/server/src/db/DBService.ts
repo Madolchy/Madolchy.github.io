@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "../client/prisma.js";
 import { AuthService } from "../services/AuthService.js";
-import { FileManagerService } from "../services/FileManagerService.js";
+import { FileManagerService } from "../tests/FileManagerService.js";
 
 export const SignupRequestSchema = z.object({
     name: z.string().min(2),
@@ -35,7 +35,9 @@ export const DBService = {
                 data: { ...publicValidData, passwordHash: password, uuid: uuid },
             });
         } catch (e) {
-            return { success: false, message: "Failed to create the user", error: e };
+            const errMsg = e instanceof Error ? e.message : String(e);
+            console.log("DB REGISTER ERROR:", errMsg);
+            return { success: false, message: "Failed to create the user", error: errMsg };
         }
 
         return { success: true };
@@ -60,7 +62,7 @@ export const DBService = {
 
         const isCorrectPassword = await bcrypt.compare(password, user.passwordHash);
         if (!isCorrectPassword) {
-            return { succes: false, message: "Invalid email or password" };
+            return { success: false, message: "Invalid email or password" };
         }
 
         const token = AuthService.generateToken({ id: user.uuid });
@@ -69,7 +71,9 @@ export const DBService = {
         return { success: true, token: token, refreshToken: refreshToken };
     },
 
-    logoutUser: async () => {},
+    logoutUser: async (req: Request) => {
+        return { success: true };
+    },
 
     getUserBackground: async (req: Request) => {
         const uuid = req.auth.id;

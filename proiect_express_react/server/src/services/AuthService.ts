@@ -15,7 +15,7 @@ export const AuthService = {
         return jwt.sign({ ...payload, tokenType: "refresh" }, JWT_SECRET as jwt.Secret, { expiresIn: "7d" });
     },
 
-    verifyToken: (token: string) => {
+    verifyRefreshToken: (token: string) => {
         try {
             const decoded = jwt.verify(token, JWT_SECRET as jwt.Secret);
 

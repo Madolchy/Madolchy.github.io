@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { db } from "../store/db";
 import { FileManagerService } from "../services/FileManagerService";
 import { useBlob } from "../context/BlobContext";
@@ -10,15 +10,13 @@ export function useDesktopManager(contextActiveId: number | null, gridData: any)
     const { getUrl } = useBlob();
     const queryClient = useQueryClient();
 
-    // later will add t his inside of the user data check, when ill display settings etc
-    const { data: backgroundData, isError } = useQuery({
+    const { data: backgroundData } = useQuery({
         queryKey: ["background"],
-        queryFn: async () => await FileManagerService.getUserBackground(),
+        queryFn: () => FileManagerService.getUserBackground(),
     });
 
     const backgroundUrl = useMemo(() => {
         if (!backgroundData?.backgroundBlob) return null;
-
         return getUrl(backgroundData.backgroundUuid + "_full", backgroundData.backgroundBlob);
     }, [backgroundData, getUrl]);
 
@@ -28,9 +26,7 @@ export function useDesktopManager(contextActiveId: number | null, gridData: any)
             if (!blob) throw new Error("File not found");
 
             await apiClient.post("/background", { json: { backgroundUuid: uuid } });
-
             await db.saveBackground(uuid, blob);
-
             return { uuid, blob };
         },
         onSuccess: () => {
@@ -41,55 +37,49 @@ export function useDesktopManager(contextActiveId: number | null, gridData: any)
         },
     });
 
-    const canSetBackground = useMemo(() => {
-        if (contextActiveId === null || !gridData) return false;
-        const data = gridData[contextActiveId];
+    const deleteFileMutation = useMutation({
+        mutationFn: async (uuid: string) => {
+            await FileManagerService.deleteFile(uuid);
+            // await db.removeThumbnail(uuid)
+            //
+            return uuid;
+        },
+        onSuccess: (uuid: string) => {
+            queryClient.invalidateQueries({ queryKey: ["file", uuid] });
+        },
+        onError: (err) => {
+            console.error("File deletion failed with: ", err);
+        },
+    });
 
-        return !!(data && data.fileType && data.fileType.startsWith("image/"));
-    }, [contextActiveId, gridData]);
-
-    const handleSetBackground = useCallback(async () => {
-        if (setBackgroundMutation.isPending) return; // prevent double mutations at same time
-        if (contextActiveId === null || !gridData) return;
-
-        const data = gridData[contextActiveId];
-        if (!data?.id) {
-            console.error("No valid file data found for the active context");
-            return;
-        }
-
-        setBackgroundMutation.mutate(data.id);
-    }, [contextActiveId, gridData, setBackgroundMutation]);
-
-    const canDelete = useMemo(() => {
-        if (contextActiveId === null || !gridData) return false;
-        const data = gridData[contextActiveId];
-
-        return !!data;
-    }, [contextActiveId, gridData]);
-    const availableContextActions = useMemo((): ContextAction[] => {
+    const { mutate: bgMutate, isPending: bgIsPending } = setBackgroundMutation;
+    const { mutate: deleteMutate, isPending: deleteIsPending } = deleteFileMutation;
+    const availableContextActions: ContextAction[] = useMemo(() => {
         const actions: ContextAction[] = [];
+        const activeData = contextActiveId !== null && gridData ? gridData[contextActiveId] : undefined;
 
-        if (canSetBackground) {
+        if (activeData?.fileType?.startsWith("image/")) {
             actions.push({
                 contextName: "Set Desktop Background",
-                contextAction: handleSetBackground,
+                contextAction: () => bgMutate(activeData.id),
+                isDisabled: bgIsPending,
             });
         }
 
-        if (canDelete) {
+        if (activeData) {
             actions.push({
                 contextName: "Delete",
-                contextAction: () => console.log("e"),
+                contextAction: () => deleteMutate(activeData.id),
+                isDisabled: deleteIsPending,
             });
         }
 
         return actions;
-    }, [canDelete, canSetBackground, handleSetBackground]);
+    }, [bgIsPending, bgMutate, contextActiveId, deleteIsPending, deleteMutate, gridData]);
 
     return {
         backgroundUrl,
         availableContextActions,
-        isBackgroundSetting: setBackgroundMutation.isPending,
+        isBackgroundSetting: bgIsPending,
     };
 }

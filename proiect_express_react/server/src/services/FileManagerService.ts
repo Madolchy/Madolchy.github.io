@@ -17,7 +17,7 @@ const UploadPayloadSchema = z.object({
 const cellSchema = z.number().int().min(0).max(255);
 
 export const FileManagerService = {
-    register_file: async (uuid, metadata) => {
+    registerFile: async (uuid, metadata) => {
         console.log(metadata);
         const validData = UploadPayloadSchema.safeParse(metadata);
         if (!validData.success) {
@@ -35,9 +35,7 @@ export const FileManagerService = {
                     fileType: data.fileType,
                     bytes: data.bytes,
                     cell: data.cell,
-                    user: {
-                        connect: { uuid: uuid },
-                    },
+                    userId: uuid,
                 },
             });
             return { success: true, data: result };
@@ -77,6 +75,38 @@ export const FileManagerService = {
 
         const filePath = path.join(userDir, actualFile);
         return { success: true, filePath };
+    },
+
+    deleteFile: async (uuid: string, fileId: string) => {
+        const safeFileId = path.basename(fileId);
+
+        if (!safeFileId) {
+            return { success: false, message: "Invalid file id" };
+        }
+
+        try {
+            const icon = await prisma.desktopIcon.findFirst({
+                where: { id: safeFileId, userId: uuid },
+            });
+
+            if (!icon) {
+                return { success: false, message: "File not found" };
+            }
+
+            const userDir = path.join(process.cwd(), "uploads", uuid);
+            if (fs.existsSync(userDir)) {
+                const files = fs.readdirSync(userDir);
+                const actualFile = files.find((f) => path.parse(f).name === safeFileId);
+                if (actualFile) {
+                    fs.unlinkSync(path.join(userDir, actualFile));
+                }
+            }
+
+            await prisma.desktopIcon.delete({ where: { id: safeFileId } });
+            return { success: true };
+        } catch (e) {
+            return { success: false, message: "Failed to delete file", error: e };
+        }
     },
 
     swap_items: async (firstCellPayload, secondCellPayload, userUuid) => {

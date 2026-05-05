@@ -23,12 +23,15 @@ export default function ContextMenu({ isActive, position, availableContextAction
             onContextMenu={(e) => e.preventDefault()}
         >
             {availableContextActions.length > 0 ? (
-                availableContextActions.map(({ contextName, contextAction }) => (
+                availableContextActions.map(({ contextName, contextAction, isDisabled }) => (
                     <li key={contextName}>
                         <button
-                            className="w-full text-left px-3 py-1.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors"
+                            className="w-full text-left px-3 py-1.5 rounded transition-colors data-[disabled]:text-muted-foreground data-[disabled]:cursor-not-allowed hover:not-data-[disabled]:bg-accent hover:not-data-[disabled]:text-accent-foreground"
                             type="button"
+                            disabled={isDisabled}
+                            data-disabled={isDisabled || undefined}
                             onClick={(e) => {
+                                if (isDisabled) return;
                                 e.stopPropagation();
                                 contextAction();
                                 closeContext();
