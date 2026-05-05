@@ -1,7 +1,4 @@
-import { meta } from "zod/v4/core";
 import { prisma } from "../client/prisma.js";
-import { PrismaClient } from "../generated/prisma/client.js";
-import { DesktopIconUncheckedCreateInputSchema } from "../generated/zod/index.js";
 import z from "zod";
 import path from "node:path";
 import fs from "node:fs";

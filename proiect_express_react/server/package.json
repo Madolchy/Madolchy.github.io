@@ -46,10 +46,10 @@
         "zod-prisma-types": "^3.3.11"
     },
     "scripts": {
-        "dev": "tsx watch src/app.ts",
-        "start": "tsx src/app.ts",
+        "dev": "tsx watch src/server.ts",
+        "start": "tsx src/server.ts",
         "build:client": "cd ../client && npm run build",
-        "start:prod": "npx cross-env NODE_ENV=production tsx src/app.ts",
+        "start:prod": "npx cross-env NODE_ENV=production tsx src/server.ts",
         "test": "npx cross-env NODE_ENV=test npx prisma db push --skip-generate && npx cross-env NODE_ENV=test vitest run"
     }
 }

@@ -5,7 +5,6 @@ import type { Request, Response, NextFunction } from "express";
 import { DBService } from "./db/DBService.js";
 import { uploadService } from "./services/diskStorageService.js";
 import { requireLogin } from "./middleware/RequireLogin.js";
-import { FileManagerService } from "./tests/FileManagerService.js";
 import { VisitCounter } from "./middleware/VisitCounter.js";
 import cookieParser from "cookie-parser";
 import ms from "ms";
@@ -18,6 +17,7 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { isProd, port, bindAddress } from "./settings.js";
+import { FileManagerService } from "./services/FileManagerService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,7 +148,7 @@ app.post("/api/upload", requireLogin, uploadService.single("myFile"), async (req
         cell: cell,
     };
 
-    const result = await FileManagerService.register_file(uuid, metadata);
+    const result = await FileManagerService.registerFile(uuid, metadata);
     if (result.success && result.data) {
         return res.status(200).json(result.data);
     } else {
