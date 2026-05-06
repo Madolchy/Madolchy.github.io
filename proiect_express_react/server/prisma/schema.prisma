@@ -42,5 +42,4 @@ model DesktopIcon {
   backgroundUser  User?  @relation("UserBackground")
 
   @@unique([userId, filename])
-  @@unique([userId, cell])
 }

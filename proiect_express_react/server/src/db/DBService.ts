@@ -6,6 +6,9 @@ import { prisma } from "../client/prisma.js";
 import { AuthService } from "../services/AuthService.js";
 import { FileManagerService } from "../services/FileManagerService.js";
 import { SignupRequestSchema } from "../types/login.js";
+import type { User } from "../generated/prisma/client.js";
+import type { DesktopIconModel } from "../generated/prisma/models.js";
+import type { PrismaPromise } from "../generated/prisma/internal/prismaNamespace.js";
 
 export const DBService = {
     registerUser: async (req: Request) => {
@@ -136,7 +139,68 @@ export const DBService = {
         }
     },
 
-    getUsers: async () => {
-        return prisma.user.findMany();
+    updateUserDesktop: async (uuid: string, newDesktop: DesktopIconModel[]) => {
+        if (!uuid || !newDesktop) {
+            return { success: false, message: "Uuid or new desktop positions are missing" };
+        }
+
+        const user = await DBService.getUser(uuid);
+        if (!user) {
+            return { success: false, message: "User not found" };
+        }
+
+        const userDesktop = await DBService.getUserDesktop(uuid);
+        if (!userDesktop) {
+            return { success: false, message: "Failed to get user desktop" };
+        }
+
+        const newDesktopMap = new Map(newDesktop.map((icon) => [icon.id, icon]));
+
+        const updateOperations: PrismaPromise<DesktopIconModel>[] = [];
+        userDesktop.forEach((oldIcon) => {
+            const match = newDesktopMap.get(oldIcon.id);
+            if (!match) return;
+
+            if (oldIcon.cell !== match.cell) {
+                updateOperations.push(
+                    prisma.desktopIcon.update({
+                        where: { id: oldIcon.id },
+                        data: { cell: match.cell },
+                    }),
+                );
+            }
+        });
+
+        if (!(updateOperations.length > 0)) {
+            return { success: true, message: "No updates necessary" };
+        }
+
+        try {
+            await prisma.$transaction(updateOperations);
+            console.log(`Successfully batch-updated ${updateOperations.length} icons!`);
+        } catch (error) {
+            console.error("Batch update failed!", error);
+            return { success: false, message: "Database update failed during transaction" };
+        }
+
+        return { success: true, message: "Desktop updated successfully" };
+    },
+
+    getUser: async (uuid: string): Promise<User | null> => {
+        const user = await prisma.user.findUnique({
+            where: {
+                uuid: uuid,
+            },
+        });
+        return user;
+    },
+
+    getUserDesktop: async (uuid: string) => {
+        const icons = await prisma.desktopIcon.findMany({
+            where: {
+                userId: uuid,
+            },
+        });
+        return icons;
     },
 };

@@ -41,20 +41,6 @@ export const FileManagerService = {
         }
     },
 
-    getUserDesktop: async (uuid: string) => {
-        try {
-            const icons = await prisma.desktopIcon.findMany({
-                where: {
-                    userId: uuid,
-                },
-            });
-
-            return icons;
-        } catch (error) {
-            console.error("Error fetching icons: ", error);
-            return undefined;
-        }
-    },
     getFilePath: async (uuid: string, fileId: string) => {
         const safeFileId = path.basename(fileId);
         const userDir = path.join(process.cwd(), "uploads", uuid);

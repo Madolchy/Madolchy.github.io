@@ -156,20 +156,32 @@ app.post("/api/upload", requireLogin, uploadService.single("myFile"), async (req
     }
 });
 
-app.post("/api/desktop/swap", requireLogin, async (req: Request, res: Response) => {
-    const uuid = req.auth.id;
-    const { first, second } = req.body;
+// app.post("/api/desktop/swap", requireLogin, async (req: Request, res: Response) => {
+//     const uuid = req.auth.id;
+//     const { first, second } = req.body;
 
-    const result = await FileManagerService.swap_items(first, second, uuid);
-    if (result.success) return res.status(200).json({});
-    return res.status(400).json({});
-});
+//     const result = await FileManagerService.swap_items(first, second, uuid);
+//     if (result.success) return res.status(200).json({});
+//     return res.status(400).json({});
+// });
 
 app.get("/api/desktop", VisitCounter, requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
-    const items = await FileManagerService.getUserDesktop(uuid);
+    const items = await DBService.getUserDesktop(uuid);
     if (!items) return res.status(400).json({});
     return res.status(200).json(items);
+});
+
+app.put("/api/desktop", requireLogin, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+    const { newDesktop } = req.body;
+    const result = await DBService.updateUserDesktop(uuid, newDesktop);
+    if (!result.success) {
+        console.log("Failed with: ", result.message);
+        return res.status(400).json(result.message);
+    }
+
+    return res.status(200).json(result.message);
 });
 
 app.delete("/api/files/:id", requireLogin, async (req: Request, res: Response) => {
