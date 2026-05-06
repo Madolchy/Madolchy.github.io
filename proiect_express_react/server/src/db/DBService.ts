@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { prisma } from "../client/prisma.js";
 import { AuthService } from "../services/AuthService.js";
 import { FileManagerService } from "../services/FileManagerService.js";
-import { SignupRequestSchema } from "../types/login.js";
+import { LoginSchema, SignupRequestSchema } from "../types/login.js";
 import type { User } from "../generated/prisma/client.js";
 import type { DesktopIconModel } from "../generated/prisma/models.js";
 import type { PrismaPromise } from "../generated/prisma/internal/prismaNamespace.js";
@@ -172,7 +172,7 @@ export const DBService = {
         });
 
         if (!(updateOperations.length > 0)) {
-            return { success: true, message: "No updates necessary" };
+            return { success: true, message: "No updates necessary", data: newDesktop };
         }
 
         try {
@@ -183,7 +183,7 @@ export const DBService = {
             return { success: false, message: "Database update failed during transaction" };
         }
 
-        return { success: true, message: "Desktop updated successfully" };
+        return { success: true, message: "Desktop updated successfully", data: newDesktop };
     },
 
     getUser: async (uuid: string): Promise<User | null> => {

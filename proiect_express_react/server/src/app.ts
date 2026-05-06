@@ -176,12 +176,13 @@ app.put("/api/desktop", requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
     const { newDesktop } = req.body;
     const result = await DBService.updateUserDesktop(uuid, newDesktop);
+    console.log(result.message);
     if (!result.success) {
         console.log("Failed with: ", result.message);
         return res.status(400).json(result.message);
     }
 
-    return res.status(200).json(result.message);
+    return res.status(200).json({ data: result.data });
 });
 
 app.delete("/api/files/:id", requireLogin, async (req: Request, res: Response) => {
