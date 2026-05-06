@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileManagerService } from "../services/FileManagerService";
 import { apiClient } from "../client/apiClient";
 
@@ -27,6 +27,10 @@ export function useDesktopIcons(dir = "") {
         },
     });
 
+    const { isLoading: isUpdateLoading, isError: isUpdateError } = useMutation({
+        mutationFn: (newDesktop) => FileManagerService.setUserDesktop(newDesktop),
+        onMutate: async (newDesktop) => {},
+    });
     const [draggedBox, setDraggedBox] = useState<number | undefined>(undefined);
     const draggedBoxRef = useRef<number | undefined>(undefined);
 

@@ -3,6 +3,7 @@ import "./DesktopIcon.css";
 import { FileIconFactory } from "./IconFactory";
 import { useBlob } from "../context/BlobContext";
 import { ThumbnailService } from "../services/ThumbnailService";
+import { useQuery } from "@tanstack/react-query";
 
 // data is going to be a x * y grid, with cell being either undefined or an object
 const DesktopIcon = React.memo(
@@ -10,22 +11,23 @@ const DesktopIcon = React.memo(
         const [thumbUrl, setThumbUrl] = useState<string | null>(null);
         const { getUrl, revokeUrl } = useBlob();
 
+        const { data: blob } = useQuery({
+            queryKey: ["file", data?.id],
+            queryFn: () => ThumbnailService.getThumbnail(data?.id, data?.fileType),
+            staleTime: Infinity,
+            enabled: !!data?.id,
+        });
+
         useEffect(() => {
-            if (!data?.id) return;
+            if (!blob) return;
 
-            const fetchThumbnail = async () => {
-                const blob = await ThumbnailService.getThumbnail(data?.id, data?.fileType);
-                if (blob) {
-                    const url = getUrl(data?.id, blob);
-                    setThumbUrl(url);
-                }
-            };
-
-            fetchThumbnail();
+            const url = getUrl(data?.id, blob);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setThumbUrl(url);
             return () => {
                 revokeUrl(data?.id);
             };
-        }, [data?.id, data?.thumbnail, getUrl, revokeUrl]);
+        }, [blob, data?.id, data?.thumbnail, getUrl, revokeUrl]);
 
         return (
             <div

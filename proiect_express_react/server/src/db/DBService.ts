@@ -5,19 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { prisma } from "../client/prisma.js";
 import { AuthService } from "../services/AuthService.js";
 import { FileManagerService } from "../services/FileManagerService.js";
-
-export const SignupRequestSchema = z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-    password: z.string().min(8),
-});
-
-export const LoginSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(8),
-});
-
-type SignupRequest = z.infer<typeof SignupRequestSchema>;
+import { SignupRequestSchema } from "../types/login.js";
 
 export const DBService = {
     registerUser: async (req: Request) => {

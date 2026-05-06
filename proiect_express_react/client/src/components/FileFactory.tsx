@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileManagerService } from "../services/FileManagerService";
 import { useBlob } from "../context/BlobContext";
+import { queryClient } from "@/client/queryClient";
 
 const ImagePreview = ({ url }: { url: string }) => (
     <img src={url} className="w-full h-full object-contain" alt="Preview" draggable={false} />
@@ -45,26 +46,38 @@ const previewMap: Record<string, React.ComponentType<FilePreviewProps>> = {
 
 export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileType: string; thumbnail?: Blob }) => {
     const { getUrl, revokeUrl } = useBlob();
+    const [fileUrl, setFileUrl] = useState<string | null>(null);
 
+    const cachedThumbnail = queryClient.getQueryData<Blob>(["file", uuid]);
     const {
         data: blob,
         isLoading,
         isError,
     } = useQuery({
-        queryKey: ["file", uuid],
+        queryKey: ["file", uuid + "_full"],
         queryFn: () => FileManagerService.getRawFile(uuid),
+        staleTime: Infinity,
         enabled: !!uuid,
     });
 
     useEffect(() => {
+        if (!blob) return;
+
+        const url = getUrl(uuid + "_full", blob);
+        console.log("Generated new Full URL:", url);
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFileUrl(url);
         return () => {
-            console.log("Cleanup ran!");
+            console.log("Component unmounting, revoking Full URL:", url);
             revokeUrl(uuid + "_full");
         };
-    }, [revokeUrl, uuid]);
+    }, [blob, getUrl, revokeUrl, uuid]);
 
-    // while image is grabbed from server, show thumbnail
-    if (isLoading && thumbnail) {
+    // problem: we don't have thumbnail, itrs undefined
+    console.log("Cached thumbnail is: ", cachedThumbnail);
+    if (isLoading && cachedThumbnail) {
+        console.log("Still grabbing thumbnail... using small");
         return <ImagePreview url={getUrl(uuid, thumbnail)} />;
     }
 
@@ -72,7 +85,10 @@ export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileT
     if (isLoading && !thumbnail) {
         return (
             <div className="w-full h-full flex items-center justify-center">
-                <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" role="status">
+                <div
+                    className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent"
+                    role="status"
+                >
                     <span className="sr-only">Loading...</span>
                 </div>
             </div>
@@ -82,8 +98,6 @@ export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileT
     if (isError || !blob) {
         return null;
     }
-
-    const fileUrl = getUrl(uuid + "_full", blob);
 
     const PreviewComponent = previewMap[fileType] || DefaultPreview;
 

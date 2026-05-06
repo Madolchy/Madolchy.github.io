@@ -15,12 +15,11 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
         y: 400,
         width: 320,
         height: 200,
-    }
+    };
 
     return (
         <Rnd
             default={defaultPosition}
-            bounds="window"
             dragHandleClassName="window-draggable"
             onDragStart={() => {
                 onBringToFront(id);
@@ -45,12 +44,10 @@ export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData
             <Card className="w-full h-full window-draggable flex flex-col p-4 overflow-hidden">
                 <CardHeader className="flex flex-row items-start justify-between p-0 mb-3 flex-none">
                     <Breadcrumb className="flex-1 min-w-0">
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="truncate block">
-                                    {title}
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem className="truncate block">{title}</BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
 
                     <Button variant="ghost" size="icon" className="h-auto p-1 -mt-1" onClick={() => onClose(id)}>
                         <X className="h-4 w-4" />

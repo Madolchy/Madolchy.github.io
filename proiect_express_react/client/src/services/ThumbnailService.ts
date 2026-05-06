@@ -65,10 +65,10 @@ export const ThumbnailService = {
                     queryKey: ["file", uuid],
                     queryFn: () => FileManagerService.getRawFile(uuid),
                 });
-                if (!fileBlob) return null;
+                if (!fileBlob) return undefined;
 
                 const mimeType = fileType || fileBlob.type;
-                if (!mimeType || !mimeType.startsWith("image/")) return null;
+                if (!mimeType || !mimeType.startsWith("image/")) return undefined;
 
                 const thumbnail = await generateThumbnail(fileBlob, mimeType);
                 if (thumbnail) {

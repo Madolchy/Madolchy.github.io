@@ -63,6 +63,7 @@ export const FileManagerService = {
             return { success: false, message: "User directory not found" };
         }
 
+        console.log(safeFileId);
         const files = fs.readdirSync(userDir);
         const actualFile = files.find((f) => path.parse(f).name === safeFileId);
 
@@ -90,6 +91,8 @@ export const FileManagerService = {
                 return { success: false, message: "File not found" };
             }
 
+            await prisma.desktopIcon.delete({ where: { id: safeFileId } });
+
             const userDir = path.join(process.cwd(), "uploads", uuid);
             if (fs.existsSync(userDir)) {
                 const files = fs.readdirSync(userDir);
@@ -99,7 +102,6 @@ export const FileManagerService = {
                 }
             }
 
-            await prisma.desktopIcon.delete({ where: { id: safeFileId } });
             return { success: true };
         } catch (e) {
             return { success: false, message: "Failed to delete file", error: e };

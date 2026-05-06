@@ -169,7 +169,6 @@ app.get("/api/desktop", VisitCounter, requireLogin, async (req: Request, res: Re
     const uuid = req.auth.id;
     const items = await FileManagerService.getUserDesktop(uuid);
     if (!items) return res.status(400).json({});
-    console.log("Got the following items!: ", items);
     return res.status(200).json(items);
 });
 
@@ -177,6 +176,7 @@ app.delete("/api/files/:id", requireLogin, async (req: Request, res: Response) =
     const uuid = req.auth.id;
     const result = await FileManagerService.deleteFile(uuid, req.params.id);
     if (!result.success) {
+        console.log(result);
         return res.status(404).json(result);
     }
     return res.status(200).json(result);

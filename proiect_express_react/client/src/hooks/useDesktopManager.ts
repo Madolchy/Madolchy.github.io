@@ -13,6 +13,7 @@ export function useDesktopManager(contextActiveId: number | null, gridData: any)
     const { data: backgroundData } = useQuery({
         queryKey: ["background"],
         queryFn: () => FileManagerService.getUserBackground(),
+        staleTime: Infinity,
     });
 
     const backgroundUrl = useMemo(() => {
@@ -40,12 +41,10 @@ export function useDesktopManager(contextActiveId: number | null, gridData: any)
     const deleteFileMutation = useMutation({
         mutationFn: async (uuid: string) => {
             await FileManagerService.deleteFile(uuid);
-            // await db.removeThumbnail(uuid)
-            //
             return uuid;
         },
         onSuccess: (uuid: string) => {
-            queryClient.invalidateQueries({ queryKey: ["file", uuid] });
+            queryClient.invalidateQueries({ queryKey: ["desktopIcons"] });
         },
         onError: (err) => {
             console.error("File deletion failed with: ", err);
