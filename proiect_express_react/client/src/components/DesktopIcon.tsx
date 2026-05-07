@@ -57,7 +57,7 @@ const DesktopIcon = React.memo(
                             className="w-full h-full object-contain pointer-events-none select-none native-drag-none"
                         />
                     ) : (
-                        <FileIconFactory fileType={data?.fileType} />
+                        <FileIconFactory fileType={data?.fileType} thumbUrl={thumbUrl} />
                     )}
                 </div>
             </div>
