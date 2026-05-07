@@ -1,25 +1,14 @@
 import { useMemo } from "react";
 import { db } from "../store/db";
 import { FileManagerService } from "../services/FileManagerService";
-import { useBlob } from "../context/BlobContext";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../client/apiClient";
 import type { ContextAction } from "@/types/context";
+import { useContextMenu } from "@/context/ContextMenuContext";
 
-export function useDesktopManager(contextActiveId: number | null, gridData: any) {
-    const { getUrl } = useBlob();
+export function useDesktopActions(gridData: any) {
+    const { contextActiveId } = useContextMenu();
     const queryClient = useQueryClient();
-
-    const { data: backgroundData } = useQuery({
-        queryKey: ["background"],
-        queryFn: () => FileManagerService.getUserBackground(),
-        staleTime: Infinity,
-    });
-
-    const backgroundUrl = useMemo(() => {
-        if (!backgroundData?.backgroundBlob) return null;
-        return getUrl(backgroundData.backgroundUuid + "_full", backgroundData.backgroundBlob);
-    }, [backgroundData, getUrl]);
 
     const setBackgroundMutation = useMutation({
         mutationFn: async (uuid: string) => {
@@ -53,6 +42,7 @@ export function useDesktopManager(contextActiveId: number | null, gridData: any)
 
     const { mutate: bgMutate, isPending: bgIsPending } = setBackgroundMutation;
     const { mutate: deleteMutate, isPending: deleteIsPending } = deleteFileMutation;
+
     const availableContextActions: ContextAction[] = useMemo(() => {
         const actions: ContextAction[] = [];
         const activeData = contextActiveId !== null && gridData ? gridData[contextActiveId] : undefined;
@@ -77,7 +67,6 @@ export function useDesktopManager(contextActiveId: number | null, gridData: any)
     }, [bgIsPending, bgMutate, contextActiveId, deleteIsPending, deleteMutate, gridData]);
 
     return {
-        backgroundUrl,
         availableContextActions,
         isBackgroundSetting: bgIsPending,
     };

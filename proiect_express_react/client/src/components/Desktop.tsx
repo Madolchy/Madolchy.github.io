@@ -1,24 +1,25 @@
 import React, { useState } from "react";
 import DesktopIcon from "./DesktopIcon";
-import { SubWindow } from "./SubWindow";
 import "./Desktop.css";
 
 import { useGrid } from "../hooks/useGrid";
 import { useDesktopIcons } from "../hooks/useDesktopIcons";
-import { useWindowManager } from "../hooks/useWindowManager";
 
 import { GridContainer } from "./GridContainer";
 import ContextMenu from "./ContextMenu";
-import { useContextMenu } from "../hooks/useContextMenu";
-import { useDesktopManager } from "../hooks/useDesktopManager";
+import { useWindowManager } from "@/context/WindowManagerContext";
+import { useDesktopManager } from "@/context/DesktopManagerContext";
+import { useDesktopActions } from "@/hooks/useDesktopActions";
+import { useContextMenu } from "@/context/ContextMenuContext";
 
 export default function Desktop({ onCellDrop }) {
     const [boxNumberPerRow] = useState(16);
-    const { gridData, draggedBox, isLoading, isError, resetSelect, handleSelect, handleSwap } = useDesktopIcons();
+    const { gridData, draggedBox, isLoading, isError, handleSelect, handleSwap } = useDesktopIcons();
     const { boxSize, containerRef, actualColumns } = useGrid(boxNumberPerRow, isLoading);
     const { windows, openWindow, closeWindow, bringToFront } = useWindowManager();
+    const { backgroundUrl } = useDesktopManager();
     const { contextActiveId, contextPosition, openContext, closeContext } = useContextMenu();
-    const { backgroundUrl, availableContextActions } = useDesktopManager(contextActiveId, gridData);
+    const { availableContextActions } = useDesktopActions(gridData);
 
     if (isLoading) return <div>Loading Desktop...</div>;
     if (isError || !gridData) return <div>Failed to load icons!</div>;
@@ -53,16 +54,6 @@ export default function Desktop({ onCellDrop }) {
                 availableContextActions={availableContextActions}
                 closeContext={closeContext}
             />
-
-            {windows.map((win) => (
-                <SubWindow
-                    key={win.id}
-                    windowData={win}
-                    onClose={closeWindow}
-                    onDragStart={resetSelect}
-                    onBringToFront={bringToFront}
-                />
-            ))}
         </>
     );
 }

@@ -1,11 +1,12 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect, type ReactNode } from "react";
+import { ContextMenuContext } from "./ContextMenuContext";
 import type { vec2 } from "../types/default";
 
-export function useContextMenu() {
-    const [contextActiveId, setActiveContextId] = useState(null);
+export function ContextMenuProvider({ children }: { children: ReactNode }) {
+    const [contextActiveId, setActiveContextId] = useState<number | null>(null);
     const [contextPosition, setContextPosition] = useState<vec2>({ x: 0, y: 0 });
 
-    const openContext = useCallback((e, id) => {
+    const openContext = useCallback((e: React.MouseEvent, id: number) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -18,16 +19,15 @@ export function useContextMenu() {
     }, []);
 
     useEffect(() => {
-        if (contextActiveId) {
+        if (contextActiveId !== null) {
             window.addEventListener("click", closeContext);
             return () => window.removeEventListener("click", closeContext);
         }
     }, [contextActiveId, closeContext]);
 
-    return {
-        contextActiveId,
-        contextPosition,
-        openContext,
-        closeContext,
-    };
+    return (
+        <ContextMenuContext.Provider value={{ contextActiveId, contextPosition, openContext, closeContext }}>
+            {children}
+        </ContextMenuContext.Provider>
+    );
 }

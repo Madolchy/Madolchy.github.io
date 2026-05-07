@@ -3,6 +3,9 @@ import Desktop from "./Desktop";
 import { FileManagerService } from "../services/FileManagerService";
 import { useQueryClient } from "@tanstack/react-query";
 import { db } from "../store/db";
+import { WindowManagerProvider } from "@/context/WindowManagerProvider";
+import { ContextMenuProvider } from "@/context/ContextMenuProvider";
+import { DesktopManagerProvider } from "@/context/DesktopManagerProvider";
 
 export default function DesktopIconManager() {
     const queryClient = useQueryClient();
@@ -33,7 +36,13 @@ export default function DesktopIconManager() {
 
     return (
         <>
-            <Desktop onCellDrop={handleDropOnCell} />
+            <WindowManagerProvider>
+                <ContextMenuProvider>
+                    <DesktopManagerProvider>
+                        <Desktop onCellDrop={handleDropOnCell} />
+                    </DesktopManagerProvider>
+                </ContextMenuProvider>
+            </WindowManagerProvider>
         </>
     );
 }
