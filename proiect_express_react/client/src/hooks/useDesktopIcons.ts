@@ -11,26 +11,40 @@ export function useDesktopIcons(dir = "") {
         isError,
     } = useQuery({
         queryKey: ["desktopIcons"],
-        queryFn: async () => await FileManagerService.getUserDesktop(dir),
-        staleTime: Infinity,
-        select: (gridData) => {
-            if (!gridData) return [];
-
-            // will need to use grid boxes depenncy later instead of 16
+        queryFn: async () => {
+            const raw = await FileManagerService.getUserDesktop(dir);
             const gridArray = Array.from({ length: 16 * 16 });
-
-            gridData.forEach((element) => {
-                gridArray[element.cell] = element;
+            raw.forEach((el) => {
+                gridArray[el.cell] = el;
             });
-
             return gridArray;
+        },
+        staleTime: Infinity,
+    });
+
+    const {
+        mutate: updateDesktop,
+        isLoading: isUpdateLoading,
+        isError: isUpdateError,
+    } = useMutation({
+        mutationFn: (newDesktop) => FileManagerService.putUserDesktop(newDesktop),
+        onMutate: async (newDesktop) => {
+            await queryClient.cancelQueries({ queryKey: ["desktopIcons"] });
+
+            const previous = queryClient.getQueryData(["desktopIcons"]);
+
+            queryClient.setQueryData(["desktopIcons"], newDesktop);
+
+            return { previous };
+        },
+        onError: (err, newTodo, context) => {
+            queryClient.setQueryData(["desktopIcons"], context.previous);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["desktopIcons"] });
         },
     });
 
-    const { isLoading: isUpdateLoading, isError: isUpdateError } = useMutation({
-        mutationFn: (newDesktop) => FileManagerService.setUserDesktop(newDesktop),
-        onMutate: async (newDesktop) => {},
-    });
     const [draggedBox, setDraggedBox] = useState<number | undefined>(undefined);
     const draggedBoxRef = useRef<number | undefined>(undefined);
 
@@ -53,43 +67,28 @@ export function useDesktopIcons(dir = "") {
         [resetSelect],
     );
 
-    // use tanstack mutate later
-    // bug: if you try to swap empty space with a icon space, the swap happens locally but server refreshes correct one later.
     const handleSwap = useCallback(
-        async (newPosition: number) => {
-            const sourceIndex = draggedBoxRef.current;
+        (newPosition: number) => {
+            console.log("Handling swap yo c:");
 
-            if (sourceIndex === undefined || sourceIndex === newPosition) return;
+            const currentPosition = draggedBoxRef.current;
+            if (currentPosition === undefined || currentPosition === newPosition) return;
 
-            // handle this on failed
-            draggedBoxRef.current = newPosition;
-            setDraggedBox(newPosition);
+            const currentData = queryClient.getQueryData(["desktopIcons"]);
+            if (!currentData || currentData.length === 0) return;
 
-            const previousData = queryClient.getQueryData(["desktopIcons"]);
-            queryClient.setQueryData(["desktopIcons"], (oldData: any[]) => {
-                if (!oldData) return [];
-                return oldData.map((icon) => {
-                    if (icon.cell === sourceIndex) return { ...icon, cell: newPosition };
-                    if (icon.cell === newPosition) return { ...icon, cell: sourceIndex };
-                    return icon;
-                });
-            });
+            const newGrid = [...currentData];
 
-            try {
-                await apiClient
-                    .post("/desktop/swap", {
-                        json: { first: sourceIndex, second: newPosition },
-                    })
-                    .json();
-            } catch (error) {
-                console.error("Server rejected the swap. Rolling back UI...", error);
+            const sourceIcon = newGrid[currentPosition];
+            const targetIcon = newGrid[newPosition];
 
-                if (previousData) {
-                    queryClient.setQueryData(["desktopIcons"], previousData);
-                }
-            }
+            newGrid[newPosition] = sourceIcon ? { ...sourceIcon, cell: newPosition } : undefined;
+            newGrid[currentPosition] = targetIcon ? { ...targetIcon, cell: currentPosition } : undefined;
+
+            updateDesktop(newGrid);
+            resetSelect();
         },
-        [queryClient],
+        [queryClient, updateDesktop, resetSelect],
     );
 
     return {

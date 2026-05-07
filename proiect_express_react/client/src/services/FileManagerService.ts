@@ -15,6 +15,14 @@ export const FileManagerService = {
         }
     },
 
+    putUserDesktop: async (newDesktop) => {
+        const cleanedDesktop = newDesktop.filter(Boolean);
+        const response = await apiClient.put("desktop", { json: { newDesktop: cleanedDesktop } });
+        if (!response.ok) throw new Error("Failed to update desktop");
+
+        return response.json();
+    },
+
     getUserBackground: async () => {
         const response = await apiClient.get("background");
         if (!response.ok) return undefined;

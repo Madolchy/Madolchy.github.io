@@ -22,7 +22,9 @@ export default function DesktopIconManager() {
 
                 queryClient.setQueryData(["desktopIcons"], (oldData: any) => {
                     if (!oldData) return [metadata];
-                    return [...oldData, metadata];
+                    const newGrid = [...oldData];
+                    newGrid[cellId] = metadata;
+                    return newGrid;
                 });
             });
         },

@@ -62,7 +62,7 @@ export const ThumbnailService = {
         const promise = (async () => {
             try {
                 const fileBlob = await queryClient.fetchQuery({
-                    queryKey: ["file", uuid],
+                    queryKey: ["rawFile", uuid],
                     queryFn: () => FileManagerService.getRawFile(uuid),
                 });
                 if (!fileBlob) return undefined;
