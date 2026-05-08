@@ -35,12 +35,14 @@ const DesktopIcon = React.memo(
                 className="relative text-foreground bg-transparent flex items-center justify-center"
                 draggable={false}
                 onMouseDown={(e) => {
-                    e.button === 2 ? onContextMenu(e, id) : onMouseDownCallback(id, data?.id);
+                    if (e.button === 2) onContextMenu(e, id);
+                    else onMouseDownCallback(id, data?.id);
                 }}
-                onMouseUp={(e) => onMouseUpCallback(id)}
+                onMouseUp={() => onMouseUpCallback(id)}
                 onDragStart={(e) => e.preventDefault()}
                 onDrop={(e) => onCellDrop(e, id)}
                 onDragOver={(e) => e.preventDefault()}
+                onDragLeave={(e) => e.preventDefault()}
                 onDoubleClick={(e) => {
                     e.stopPropagation();
                     if (onDoubleClick) onDoubleClick(id, data);
@@ -50,15 +52,7 @@ const DesktopIcon = React.memo(
                     className={`icon icon-grabbable flex items-center justify-center relative pointer-events-none ${isActive ? "icon-highlight" : ""}`}
                     style={{ zIndex: 2 }}
                 >
-                    {thumbUrl ? (
-                        <img
-                            src={thumbUrl}
-                            draggable={false}
-                            className="w-full h-full object-contain pointer-events-none select-none native-drag-none"
-                        />
-                    ) : (
-                        <FileIconFactory fileType={data?.fileType} thumbUrl={thumbUrl} />
-                    )}
+                    <FileIconFactory fileType={data?.fileType} thumbUrl={thumbUrl} />
                 </div>
             </div>
         );

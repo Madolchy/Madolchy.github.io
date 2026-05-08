@@ -155,14 +155,40 @@ export const DBService = {
         }
 
         const newDesktopMap = new Map(newDesktop.map((icon) => [icon.id, icon]));
+        const existingIds = new Set(userDesktop.map((icon) => icon.id));
 
-        const updateOperations: PrismaPromise<DesktopIconModel>[] = [];
+        const ops: PrismaPromise<any>[] = [];
+
+        // 1. Delete icons removed from desktop
+        const toDelete = userDesktop.filter((old) => !newDesktopMap.has(old.id));
+        toDelete.forEach((icon) => {
+            ops.push(prisma.desktopIcon.delete({ where: { id: icon.id } }));
+        });
+
+        // 2. Create new icons not yet in DB
+        const toCreate = newDesktop.filter((icon) => !existingIds.has(icon.id));
+        toCreate.forEach((icon) => {
+            ops.push(
+                prisma.desktopIcon.create({
+                    data: {
+                        id: icon.id,
+                        filename: icon.filename,
+                        fileType: icon.fileType,
+                        bytes: icon.bytes,
+                        cell: icon.cell,
+                        userId: uuid,
+                    },
+                }),
+            );
+        });
+
+        // 3. Update cell positions for existing icons that moved
         userDesktop.forEach((oldIcon) => {
             const match = newDesktopMap.get(oldIcon.id);
             if (!match) return;
 
             if (oldIcon.cell !== match.cell) {
-                updateOperations.push(
+                ops.push(
                     prisma.desktopIcon.update({
                         where: { id: oldIcon.id },
                         data: { cell: match.cell },
@@ -171,19 +197,19 @@ export const DBService = {
             }
         });
 
-        if (!(updateOperations.length > 0)) {
+        if (ops.length === 0) {
             return { success: true, message: "No updates necessary", data: newDesktop };
         }
 
         try {
-            await prisma.$transaction(updateOperations);
-            console.log(`Successfully batch-updated ${updateOperations.length} icons!`);
+            await prisma.$transaction(ops);
+            console.log(`Desktop synced: ${toDelete.length} deleted, ${toCreate.length} created, rest updated.`);
         } catch (error) {
-            console.error("Batch update failed!", error);
-            return { success: false, message: "Database update failed during transaction" };
+            console.error("Desktop sync failed!", error);
+            return { success: false, message: "Database sync failed during transaction" };
         }
 
-        return { success: true, message: "Desktop updated successfully", data: newDesktop };
+        return { success: true, message: "Desktop synced successfully", data: newDesktop };
     },
 
     getUser: async (uuid: string): Promise<User | null> => {
