@@ -4,10 +4,11 @@ import { db } from "../store/db";
 export const FileManagerService = {
     getUserDesktop: async (dir: string) => {
         try {
-            const response = await apiClient.get("desktop");
+            const response = await apiClient.get("desktop", { searchParams: { folderId: dir } });
             if (!response.ok) return undefined;
 
             const data = await response.json();
+            console.log("Got data: ", data);
             return data;
         } catch (error) {
             console.error("Failed to get desktop: ", error);
@@ -15,9 +16,9 @@ export const FileManagerService = {
         }
     },
 
-    putUserDesktop: async (newDesktop) => {
+    putUserDesktop: async (newDesktop, folderId) => {
         const cleanedDesktop = newDesktop.filter(Boolean);
-        const response = await apiClient.put("desktop", { json: { newDesktop: cleanedDesktop } });
+        const response = await apiClient.put("desktop", { json: { newDesktop: cleanedDesktop, folderId: folderId } });
         if (!response.ok) throw new Error("Failed to update desktop");
 
         return response.json();
@@ -27,6 +28,8 @@ export const FileManagerService = {
         const response = await apiClient.get("background");
         if (!response.ok) return undefined;
         const { backgroundUuid } = await response.json();
+
+        if (!backgroundUuid) return undefined;
 
         const cached = await db.getBackground();
         if (cached?.backgroundBlob && cached.uuid === backgroundUuid) {
@@ -53,10 +56,11 @@ export const FileManagerService = {
             throw new Error("Failed to delete file");
         }
     },
-    uploadFile: async (files, index) => {
+    uploadFile: async (files, index, folderPath) => {
         const formData = new FormData();
 
         formData.append("index", index);
+        formData.append("folderPath", folderPath);
         formData.append("myFile", files);
 
         try {
@@ -68,5 +72,12 @@ export const FileManagerService = {
             console.error("Upload failed: ", error);
             return undefined;
         }
+    },
+    addFolder: async (folderName: string, folderId: string, cell: number) => {
+        const response = await apiClient.post("folder", { json: { folderName, folderId, cell } });
+        if (!response.ok) {
+            throw new Error("Failed to create folder");
+        }
+        return response.json();
     },
 };

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FileManagerService } from "../services/FileManagerService";
 import { useBlob } from "../context/BlobContext";
 import { queryClient } from "@/client/queryClient";
+import Desktop from "./Desktop";
 
 const ImagePreview = ({ url }: { url: string }) => (
     <img src={url} className="w-full h-full object-contain" alt="Preview" draggable={false} />
@@ -19,6 +20,7 @@ const TextPreview = ({ blob }: { blob: Blob }) => {
         }
     }, [blob]);
 
+    console.log("Resulting text: ", text);
     return (
         <div
             className="w-full h-full p-3 overflow-auto bg-card text-card-foreground"
@@ -29,10 +31,16 @@ const TextPreview = ({ blob }: { blob: Blob }) => {
     );
 };
 
+const FolderPreview = ({ name }: { name: string }) => {
+    console.log("Welp we making another folder");
+    return <Desktop folderId={name} boxPerRow={4} />;
+};
+
 const DefaultPreview = () => null;
 
 interface FilePreviewProps {
     url: string;
+    name: string;
     blob: Blob;
 }
 
@@ -42,9 +50,11 @@ const previewMap: Record<string, React.ComponentType<FilePreviewProps>> = {
     "image/jpg": ImagePreview,
     "image/gif": ImagePreview,
     "text/plain": TextPreview,
+    "type/folder": FolderPreview,
 };
 
-export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileType: string; thumbnail?: Blob }) => {
+export const FileFactory = ({ data }: { data: { id: string; type: string; name: string; thumbnail?: Blob } }) => {
+    const { id: uuid, type: fileType, name, thumbnail } = data;
     const { getUrl, revokeUrl } = useBlob();
     const [fileUrl, setFileUrl] = useState<string | null>(null);
 
@@ -57,11 +67,12 @@ export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileT
         queryKey: ["file", uuid + "_full"],
         queryFn: () => FileManagerService.getRawFile(uuid),
         staleTime: Infinity,
-        enabled: !!uuid,
+        enabled: !!uuid && fileType !== "type/folder",
     });
 
     useEffect(() => {
         if (!blob) return;
+        if (!fileType?.startsWith("image/")) return;
 
         const url = getUrl(uuid + "_full", blob);
         console.log("Generated new Full URL:", url);
@@ -72,34 +83,36 @@ export const FileFactory = ({ uuid, thumbnail, fileType }: { uuid: string; fileT
             console.log("Component unmounting, revoking Full URL:", url);
             revokeUrl(uuid + "_full");
         };
-    }, [blob, getUrl, revokeUrl, uuid]);
+    }, [blob, fileType, getUrl, revokeUrl, uuid]);
 
-    // problem: we don't have thumbnail, itrs undefined
-    console.log("Cached thumbnail is: ", cachedThumbnail);
-    if (isLoading && cachedThumbnail) {
-        console.log("Still grabbing thumbnail... using small");
-        return <ImagePreview url={getUrl(uuid, thumbnail)} />;
-    }
+    // image-specific loading logic: use cached thumbnail while full image loads
+    if (fileType?.startsWith("image/")) {
+        console.log("Cached thumbnail is: ", cachedThumbnail);
+        if (isLoading && cachedThumbnail) {
+            console.log("Still grabbing thumbnail... using small");
+            return <ImagePreview url={getUrl(uuid, thumbnail)} />;
+        }
 
-    // anything else or if thumbnail missing
-    if (isLoading && !thumbnail) {
-        return (
-            <div className="w-full h-full flex items-center justify-center">
-                <div
-                    className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent"
-                    role="status"
-                >
-                    <span className="sr-only">Loading...</span>
+        if (isLoading && !thumbnail) {
+            return (
+                <div className="w-full h-full flex items-center justify-center">
+                    <div
+                        className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent"
+                        role="status"
+                    >
+                        <span className="sr-only">Loading...</span>
+                    </div>
                 </div>
-            </div>
-        );
-    }
+            );
+        }
 
-    if (isError || !blob) {
-        return null;
+        if (isError || !blob) {
+            return null;
+        }
     }
 
     const PreviewComponent = previewMap[fileType] || DefaultPreview;
 
-    return <PreviewComponent url={fileUrl} blob={blob} />;
+    console.log("We reached here with data: ", data, blob);
+    return <PreviewComponent url={fileUrl} blob={blob} name={name} />;
 };

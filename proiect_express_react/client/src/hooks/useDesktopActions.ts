@@ -1,13 +1,11 @@
-import { useMemo } from "react";
+import { useCallback } from "react";
 import { db } from "../store/db";
 import { FileManagerService } from "../services/FileManagerService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../client/apiClient";
 import type { ContextAction } from "@/types/context";
-import { useContextMenu } from "@/context/ContextMenuContext";
 
-export function useDesktopActions(gridData: any) {
-    const { contextActiveId } = useContextMenu();
+export function useDesktopActions(folderId: string) {
     const queryClient = useQueryClient();
 
     const setBackgroundMutation = useMutation({
@@ -32,42 +30,72 @@ export function useDesktopActions(gridData: any) {
             await FileManagerService.deleteFile(uuid);
             return uuid;
         },
-        onSuccess: (uuid: string) => {
-            queryClient.invalidateQueries({ queryKey: ["desktopIcons"] });
+        onSuccess: (_uuid: string) => {
+            queryClient.invalidateQueries({ queryKey: ["desktopIcons", folderId] });
         },
         onError: (err) => {
             console.error("File deletion failed with: ", err);
         },
     });
 
+    const addFolderMutation = useMutation({
+        mutationFn: async ({ folderName, folderId, cell }: { folderName: string; folderId: string; cell: number }) => {
+            await FileManagerService.addFolder(folderName, folderId, cell);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["desktopIcons", folderId] });
+        },
+    });
+
     const { mutate: bgMutate, isPending: bgIsPending } = setBackgroundMutation;
     const { mutate: deleteMutate, isPending: deleteIsPending } = deleteFileMutation;
+    const { mutate: addFolderMutate, isPending: folderIsPending } = addFolderMutation;
 
-    const availableContextActions: ContextAction[] = useMemo(() => {
-        const actions: ContextAction[] = [];
-        const activeData = contextActiveId !== null && gridData ? gridData[contextActiveId] : undefined;
+    const getActionsForId = useCallback(
+        (id: number | null): ContextAction[] => {
+            const actions: ContextAction[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const currentGrid = queryClient.getQueryData(["desktopIcons", folderId]) as any[];
+            const activeData = id !== null && currentGrid ? currentGrid[id] : undefined;
 
-        if (activeData?.fileType?.startsWith("image/")) {
-            actions.push({
-                contextName: "Set Desktop Background",
-                contextAction: () => bgMutate(activeData.id),
-                isDisabled: bgIsPending,
-            });
-        }
+            if (activeData?.type?.startsWith("image/")) {
+                actions.push({
+                    contextName: "Set Desktop Background",
+                    contextAction: () => bgMutate(activeData.id),
+                    isDisabled: bgIsPending,
+                });
+            }
 
-        if (activeData) {
-            actions.push({
-                contextName: "Delete",
-                contextAction: () => deleteMutate(activeData.id),
-                isDisabled: deleteIsPending,
-            });
-        }
+            if (activeData) {
+                actions.push({
+                    contextName: "Delete",
+                    contextAction: () => deleteMutate(activeData.id),
+                    isDisabled: deleteIsPending,
+                });
+            }
 
-        return actions;
-    }, [bgIsPending, bgMutate, contextActiveId, deleteIsPending, deleteMutate, gridData]);
+            if (!activeData) {
+                actions.push({
+                    contextName: "Create folder",
+                    contextAction: () => {
+                        const newFolderId = Math.random().toString().substring(2, 16);
+                        addFolderMutate({
+                            folderName: newFolderId,
+                            folderId: folderId,
+                            cell: id ?? 0,
+                        });
+                    },
+                    isDisabled: folderIsPending,
+                });
+            }
+
+            return actions;
+        },
+        [addFolderMutate, bgIsPending, bgMutate, deleteIsPending, deleteMutate, folderId, folderIsPending, queryClient],
+    );
 
     return {
-        availableContextActions,
+        getActionsForId,
         isBackgroundSetting: bgIsPending,
     };
 }

@@ -50,6 +50,7 @@
         "start": "tsx src/server.ts",
         "build:client": "cd ../client && npm run build",
         "start:prod": "npx cross-env NODE_ENV=production tsx src/server.ts",
-        "test": "npx cross-env NODE_ENV=test npx prisma db push --skip-generate && npx cross-env NODE_ENV=test vitest run"
+        "test": "npx cross-env NODE_ENV=test npx prisma db push --skip-generate && npx cross-env NODE_ENV=test vitest run",
+        "dev:clean": "npx prisma db push --force-reset && npx prisma db push && npx prisma generate && npm run dev"
     }
 }

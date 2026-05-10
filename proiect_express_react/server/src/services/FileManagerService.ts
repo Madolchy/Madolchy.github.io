@@ -5,10 +5,11 @@ import fs from "node:fs";
 
 const UploadPayloadSchema = z.object({
     id: z.string().optional(),
-    filename: z.string(),
+    name: z.string(),
     fileType: z.string(),
     bytes: z.number().int(),
     cell: z.number().int(),
+    folderId: z.string().optional(),
 });
 
 const cellSchema = z.number().int().min(0).max(255);
@@ -25,40 +26,48 @@ export const FileManagerService = {
         console.log("Data id is: ", data);
 
         try {
-            const result = await prisma.desktopIcon.create({
+            const result = await prisma.desktopItem.create({
                 data: {
                     ...(data.id ? { id: data.id } : {}),
-                    filename: data.filename,
-                    fileType: data.fileType,
+                    type: data.fileType,
+                    name: data.name,
                     bytes: data.bytes,
                     cell: data.cell,
                     userId: uuid,
+                    ...(data.folderId ? { folderId: data.folderId } : {}),
                 },
             });
             return { success: true, data: result };
         } catch (e) {
-            return { success: false, message: "Failed to create the desktop icon", error: e };
+            return { success: false, message: "Failed to create the desktop item", error: e };
         }
     },
 
     getFilePath: async (uuid: string, fileId: string) => {
         const safeFileId = path.basename(fileId);
+
         const userDir = path.join(process.cwd(), "uploads", uuid);
 
         if (!fs.existsSync(userDir)) {
             return { success: false, message: "User directory not found" };
         }
 
-        console.log(safeFileId);
-        const files = fs.readdirSync(userDir);
-        const actualFile = files.find((f) => path.parse(f).name === safeFileId);
+        const subDirs = fs
+            .readdirSync(userDir, { withFileTypes: true })
+            .filter((d) => d.isDirectory())
+            .map((d) => path.join(userDir, d.name));
 
-        if (!actualFile) {
-            return { success: false, message: "File not found" };
+        for (const dir of subDirs) {
+            const files = fs.readdirSync(dir);
+            const actualFile = files.find((f) => path.parse(f).name === safeFileId);
+
+            if (actualFile) {
+                const filePath = path.join(dir, actualFile);
+                return { success: true, filePath };
+            }
         }
 
-        const filePath = path.join(userDir, actualFile);
-        return { success: true, filePath };
+        return { success: false, message: "File not found" };
     },
 
     deleteFile: async (uuid: string, fileId: string) => {
@@ -69,15 +78,15 @@ export const FileManagerService = {
         }
 
         try {
-            const icon = await prisma.desktopIcon.findFirst({
+            const item = await prisma.desktopItem.findFirst({
                 where: { id: safeFileId, userId: uuid },
             });
 
-            if (!icon) {
+            if (!item) {
                 return { success: false, message: "File not found" };
             }
 
-            await prisma.desktopIcon.delete({ where: { id: safeFileId } });
+            await prisma.desktopItem.delete({ where: { id: safeFileId } });
 
             const userDir = path.join(process.cwd(), "uploads", uuid);
             if (fs.existsSync(userDir)) {
@@ -117,37 +126,37 @@ export const FileManagerService = {
             }
             const userId = user.id;
 
-            const icon1 = await prisma.desktopIcon.findFirst({
+            const item1 = await prisma.desktopItem.findFirst({
                 where: { userId: userId, cell: firstCell },
             });
-            const icon2 = await prisma.desktopIcon.findFirst({
+            const item2 = await prisma.desktopItem.findFirst({
                 where: { userId: userId, cell: secondCell },
             });
 
-            if (!icon1) {
-                return { success: false, message: "Source icon does not exist." };
+            if (!item1) {
+                return { success: false, message: "Source item does not exist." };
             }
 
-            if (!icon2) {
-                await prisma.desktopIcon.update({
-                    where: { id: icon1.id },
+            if (!item2) {
+                await prisma.desktopItem.update({
+                    where: { id: item1.id },
                     data: { cell: secondCell },
                 });
             } else {
                 const tempCell = -Math.floor(Math.random() * 1000000) - 1;
 
-                await prisma.desktopIcon.update({
-                    where: { id: icon1.id },
+                await prisma.desktopItem.update({
+                    where: { id: item1.id },
                     data: { cell: tempCell },
                 });
 
-                await prisma.desktopIcon.update({
-                    where: { id: icon2.id },
+                await prisma.desktopItem.update({
+                    where: { id: item2.id },
                     data: { cell: firstCell },
                 });
 
-                await prisma.desktopIcon.update({
-                    where: { id: icon1.id },
+                await prisma.desktopItem.update({
+                    where: { id: item1.id },
                     data: { cell: secondCell },
                 });
             }

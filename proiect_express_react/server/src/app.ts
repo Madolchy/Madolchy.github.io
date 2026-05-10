@@ -142,13 +142,15 @@ app.post("/api/upload", requireLogin, uploadService.single("myFile"), async (req
 
     const metadata = {
         id: path.parse(file.filename).name,
-        filename: file.originalname,
+        name: file.originalname,
         fileType: file.mimetype,
         bytes: file.size,
         cell: cell,
+        folderId: req.body.folderPath,
     };
 
     const result = await FileManagerService.registerFile(uuid, metadata);
+    console.log(result);
     if (result.success && result.data) {
         return res.status(200).json(result.data);
     } else {
@@ -156,6 +158,21 @@ app.post("/api/upload", requireLogin, uploadService.single("myFile"), async (req
     }
 });
 
+app.post("/api/folder", requireLogin, async (req: Request, res: Response) => {
+    const uuid = req.auth.id;
+    const { folderName, folderId, cell } = req.body;
+
+    if (!folderName || !folderId || cell == null) {
+        return res.status(400).json({ success: false, message: "folderName and id and cell required" });
+    }
+
+    const result = await DBService.createUserFolder(uuid, folderName, folderId, cell);
+    console.log(result);
+    if (!result.success) {
+        return res.status(400).json({ success: false, message: result.message });
+    }
+    return res.status(200).json({ success: true, data: result.data });
+});
 // app.post("/api/desktop/swap", requireLogin, async (req: Request, res: Response) => {
 //     const uuid = req.auth.id;
 //     const { first, second } = req.body;
@@ -167,15 +184,17 @@ app.post("/api/upload", requireLogin, uploadService.single("myFile"), async (req
 
 app.get("/api/desktop", VisitCounter, requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
-    const items = await DBService.getUserDesktop(uuid);
+    const folderId = req.query.folderId;
+    const items = await DBService.getUserDesktop(uuid, folderId);
     if (!items) return res.status(400).json({});
     return res.status(200).json(items);
 });
 
 app.put("/api/desktop", requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
-    const { newDesktop } = req.body;
-    const result = await DBService.updateUserDesktop(uuid, newDesktop);
+    const { folderId, newDesktop } = req.body;
+    console.log("Folder id is: ", folderId);
+    const result = await DBService.updateUserDesktop(uuid, folderId, newDesktop);
     console.log(result.message);
     if (!result.success) {
         console.log("Failed with: ", result.message);
@@ -197,7 +216,9 @@ app.delete("/api/files/:id", requireLogin, async (req: Request, res: Response) =
 
 app.get("/api/download/:filename", requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
+
     const fileId = path.basename(req.params.filename);
+
     const result = await FileManagerService.getFilePath(uuid, fileId);
     if (!result.success || !result.filePath) {
         return res.status(404).json({ message: result.message });

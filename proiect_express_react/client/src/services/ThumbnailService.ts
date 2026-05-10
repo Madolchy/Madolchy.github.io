@@ -52,7 +52,7 @@ async function generateThumbnail(file: Blob, mimeType: string): Promise<Blob | n
 }
 
 export const ThumbnailService = {
-    getThumbnail: async (uuid: string, fileType?: string): Promise<Blob | null> => {
+    getThumbnail: async (uuid: string, type?: string): Promise<Blob | null> => {
         const cached = await db.getThumbnail(uuid);
         if (cached) return cached;
 
@@ -67,7 +67,7 @@ export const ThumbnailService = {
                 });
                 if (!fileBlob) return undefined;
 
-                const mimeType = fileType || fileBlob.type;
+                const mimeType = type || fileBlob.type;
                 if (!mimeType || !mimeType.startsWith("image/")) return undefined;
 
                 const thumbnail = await generateThumbnail(fileBlob, mimeType);

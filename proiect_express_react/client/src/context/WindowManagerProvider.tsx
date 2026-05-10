@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, type ReactNode } from "react";
 import { WindowManagerContext } from "./WindowManagerContext";
-import { SubWindow } from "@/components/SubWindow";
 
 export function WindowManagerProvider({ children }: { children: ReactNode }) {
     const [windows, setWindows] = useState<any[]>([]);
@@ -14,7 +13,7 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
             {
                 id: data.id + topZIndex.current,
                 data,
-                title: data.filename || "New Window",
+                title: data.name || "New Window",
                 zIndex: topZIndex.current,
             },
         ]);
@@ -36,16 +35,6 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
     return (
         <WindowManagerContext.Provider value={{ windows, openWindow, closeWindow, bringToFront }}>
             {children}
-
-            {windows.map((win) => (
-                <SubWindow
-                    key={win.id}
-                    windowData={win}
-                    onClose={closeWindow}
-                    onDragStart={() => {}}
-                    onBringToFront={bringToFront}
-                />
-            ))}
         </WindowManagerContext.Provider>
     );
 }

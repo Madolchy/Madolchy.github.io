@@ -88,7 +88,7 @@ describe("Test the update of a desktop", () => {
             {
                 id: "non-existent-id-123",
                 filename: "fake.txt",
-                fileType: "text/plain",
+                type: "text/plain",
                 bytes: 5,
                 cell: 99,
                 userId: "fake-user-id",

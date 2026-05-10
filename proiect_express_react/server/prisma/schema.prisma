@@ -17,29 +17,32 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(auto()) @db.ObjectId @map("_id")
-  name          String
-  email         String        @unique
-  role          String?
-  passwordHash  String
-  isPremium     Boolean   @default(false)
-  uuid          String    @unique
-  icons         DesktopIcon[] @relation("UserIcons")
-  backgroundIconId String? @unique @db.ObjectId
-  backgroundIcon    DesktopIcon? @relation("UserBackground", fields: [backgroundIconId], references: [id])
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  email            String        @unique
+  role             String?
+  passwordHash     String
+  isPremium        Boolean       @default(false)
+  uuid             String        @unique
+  items            DesktopItem[] @relation("UserItems")
+  backgroundIconId String?       @unique @db.ObjectId
+  backgroundIcon   DesktopItem?  @relation("UserBackground", fields: [backgroundIconId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model DesktopIcon {
-  id         String   @id @default(auto()) @db.ObjectId @map("_id")
-  filename   String
-  fileType   String
+model DesktopItem {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  type     String
+  name     String
+  cell     Int
   /// @zod.custom.use(z.number().int().gte(0).lte(1e+7))
-  bytes      Int
-  cell       Int
-  userId     String
+  bytes    Int?
+  userId   String
+  folderId String?
 
-  user            User   @relation("UserIcons", fields: [userId], references: [uuid], onUpdate: NoAction)
-  backgroundUser  User?  @relation("UserBackground")
+  user           User          @relation("UserItems", fields: [userId], references: [uuid], onDelete: NoAction, onUpdate: NoAction)
+  backgroundUser User?         @relation("UserBackground")
+  parent         DesktopItem?  @relation("FolderContents", fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children       DesktopItem[] @relation("FolderContents")
 
-  @@unique([userId, filename])
+  @@unique([userId, folderId, name])
 }
