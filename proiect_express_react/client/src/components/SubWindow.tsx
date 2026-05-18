@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from "./ui/card";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList } from "./ui/breadcrumb";
 import { Button } from "./ui/button";
 import { X } from "lucide-react";
-import { useIconSelection } from "../context/IconSelectionContext";
+import { resetSelect } from "../context/IconSelectionContext";
 
 interface WindowData {
     id: string | number;
@@ -33,7 +33,6 @@ export const SubWindow = React.memo(function SubWindow({
     onClose,
     onBringToFront,
 }: SubWindowProps) {
-    const { resetSelect } = useIconSelection();
     const { title, zIndex, data, id } = windowData;
 
     const defaultPosition = {

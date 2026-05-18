@@ -1,88 +1,37 @@
-import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef } from "react";
+import { create } from "zustand";
 
 export interface SelectionState {
     folderId: string;
     cell: number;
 }
 
-// ---- Module-level selection (outside React = no context re-renders) ----
-
-let selectionSnapshot: SelectionState | undefined = undefined;
-const listeners = new Set<() => void>();
-
-function emitSelection(next: SelectionState | undefined) {
-    selectionSnapshot = next;
-    listeners.forEach((fn) => fn());
+interface SelectionStore {
+    selection: SelectionState | undefined;
+    select: (folderId: string, cell: number, uuid: string) => void;
+    deselect: () => void;
 }
 
-/** Subscribe to selection changes. Returns unsubscribe function. */
-function onSelectionChange(fn: () => void) {
-    listeners.add(fn);
-    return () => listeners.delete(fn);
-}
+const useSelectionStore = create<SelectionStore>((set, get) => ({
+    selection: undefined,
+    select: (folderId, cell, uuid) => {
+        const { selection } = get();
+        if (selection?.folderId === folderId && selection?.cell === cell) return;
+        if (!uuid) {
+            set({ selection: undefined });
+            return;
+        }
+        set({ selection: { folderId, cell } });
+    },
+    deselect: () => set({ selection: undefined }),
+}));
 
-/** Hook: only re-renders when THIS icon's selected state actually changes */
 export function useIsSelected(cell: number, folderId: string): boolean {
-    const [, forceUpdate] = useReducer((x) => x + 1, 0);
-    const prevRef = useRef(selectionSnapshot?.cell === cell && selectionSnapshot?.folderId === folderId);
-
-    // Keep prevRef in sync on every render (in case selection changed externally)
-    prevRef.current = selectionSnapshot?.cell === cell && selectionSnapshot?.folderId === folderId;
-
-    useEffect(() => {
-        return onSelectionChange(() => {
-            const next = selectionSnapshot?.cell === cell && selectionSnapshot?.folderId === folderId;
-            if (next !== prevRef.current) {
-                prevRef.current = next;
-                forceUpdate();
-            }
-        });
-    }, [cell, folderId]);
-
-    return prevRef.current;
+    return useSelectionStore((s) => s.selection?.cell === cell && s.selection?.folderId === folderId);
 }
 
-// ---- Context: only stable values, Desktop never re-renders from this ----
+export const handleSelect = (folderId: string, cell: number, uuid: string) =>
+    useSelectionStore.getState().select(folderId, cell, uuid);
 
-interface IconSelectionContextType {
-    selectionRef: React.MutableRefObject<SelectionState | undefined>;
-    handleSelect: (folderId: string, cell: number, uuid: string) => void;
-    resetSelect: () => void;
-}
+export const resetSelect = () => useSelectionStore.getState().deselect();
 
-export const IconSelectionContext = createContext<IconSelectionContextType | null>(null);
-
-export function IconSelectionProvider({ children }: { children: React.ReactNode }) {
-    const selectionRef = useRef<SelectionState | undefined>(undefined);
-
-    const resetSelect = useCallback(() => {
-        selectionRef.current = undefined;
-        emitSelection(undefined);
-    }, []);
-
-    const handleSelect = useCallback(
-        (folderId: string, cell: number, uuid: string) => {
-            if (selectionRef.current?.folderId === folderId && selectionRef.current?.cell === cell) return;
-            if (!uuid) {
-                resetSelect();
-                return;
-            }
-            const next = { folderId, cell };
-            selectionRef.current = next;
-            emitSelection(next);
-        },
-        [resetSelect],
-    );
-
-    return (
-        <IconSelectionContext.Provider value={{ selectionRef, handleSelect, resetSelect }}>
-            {children}
-        </IconSelectionContext.Provider>
-    );
-}
-
-export function useIconSelection() {
-    const ctx = useContext(IconSelectionContext);
-    if (!ctx) throw new Error("useIconSelection must be inside IconSelectionProvider");
-    return ctx;
-}
+export const getSelection = () => useSelectionStore.getState().selection;

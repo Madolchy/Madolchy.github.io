@@ -1,18 +1,15 @@
-import React, { useEffect, useState, type RefObject } from "react";
+import React, { useEffect, useState } from "react";
 import "./DesktopIcon.css";
 import { FileIconFactory } from "./FileIconFactory";
 import { useBlob } from "../context/BlobContext";
 import { ThumbnailService } from "../services/ThumbnailService";
 import { useQuery } from "@tanstack/react-query";
 import type { DesktopItem } from "@/types/data";
-import type { SelectionState } from "@/context/IconSelectionContext";
-import { useIsSelected } from "@/context/IconSelectionContext";
+import { getSelection, resetSelect, useIsSelected } from "@/context/IconSelectionContext";
 
 interface DesktopIconProps {
     id: number;
     data: DesktopItem;
-    selectionRef: RefObject<SelectionState>;
-    resetSelect: () => void;
     onMouseUpCallback: (currentPosition: number, newPosition: number) => void;
     onMouseDownCallback: (folderId: string, cell: number, uuid: string) => void;
     onCellDrop: (e: React.DragEvent, cellId: number) => void;
@@ -24,8 +21,6 @@ const DesktopIcon = React.memo(
     ({
         id,
         data,
-        selectionRef,
-        resetSelect,
         onMouseDownCallback,
         onMouseUpCallback,
         onCellDrop,
@@ -64,8 +59,9 @@ const DesktopIcon = React.memo(
                     else onMouseDownCallback(data.folderId, id, data?.id);
                 }}
                 onMouseUp={(e) => {
-                    if (!selectionRef.current) return;
-                    onMouseUpCallback(selectionRef.current.cell, id);
+                    const sel = getSelection();
+                    if (!sel) return;
+                    onMouseUpCallback(sel.cell, id);
                     resetSelect();
                 }}
                 onDragStart={(e) => e.preventDefault()}

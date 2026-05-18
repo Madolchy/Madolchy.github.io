@@ -11,12 +11,12 @@ import { useDesktopManager } from "@/context/DesktopManagerContext";
 import { useDesktopActions } from "@/hooks/useDesktopActions";
 import { useContextMenu } from "@/context/ContextMenuContext";
 import { useDesktopDrop } from "@/hooks/useDesktopDrop";
-import { useIconSelection } from "@/context/IconSelectionContext";
+import { handleSelect, resetSelect } from "@/context/IconSelectionContext";
 
 export default function Desktop({ folderId = "root", boxPerRow = 16 }) {
     const [boxNumberPerRow] = useState(boxPerRow);
     const onCellDrop = useDesktopDrop(folderId);
-    const { selectionRef, handleSelect: globalHandleSelect, resetSelect } = useIconSelection();
+
     const { gridData, isLoading, isError, handleSwap } = useDesktopIcons(folderId, boxPerRow);
     const { boxSize, containerRef, actualColumns } = useGrid(boxNumberPerRow, isLoading);
     const { openWindow } = useWindowManager();
@@ -48,11 +48,9 @@ export default function Desktop({ folderId = "root", boxPerRow = 16 }) {
                     key={data?.id || index}
                     id={index}
                     data={data}
-                    // we need to pass down both because isSelected is used for rerender, selectionRef is used for handleSwap
-                    selectionRef={selectionRef}
                     resetSelect={resetSelect}
                     onMouseUpCallback={handleSwap}
-                    onMouseDownCallback={globalHandleSelect}
+                    onMouseDownCallback={handleSelect}
                     onCellDrop={onCellDrop}
                     onDoubleClick={openWindow}
                     onContextMenu={handleContextMenu}
