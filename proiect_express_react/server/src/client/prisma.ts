@@ -1,10 +1,10 @@
+import { saltRounds } from "../settings.js";
 import { PrismaClient } from "../generated/prisma/client.js";
 import {
     DesktopItemUncheckedCreateInputSchema,
     DesktopItemUncheckedUpdateInputSchema,
 } from "../generated/zod/index.js";
 import bcrypt from "bcrypt";
-import { saltRounds } from "../settings.js";
 
 export const prisma = new PrismaClient().$extends({
     query: {

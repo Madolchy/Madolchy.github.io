@@ -97,16 +97,12 @@ export const DBService = {
             return { success: true, message: "User has no background set", data: null };
         }
 
-        const backgroundPath = await FileManagerService.getFilePath(uuid, user.backgroundIcon.id);
-        if (!backgroundPath.success) {
-            return { success: false, message: "The specified background is not on the server." };
-        }
+        const r2Base = process.env.R2_PUBLIC_URL || "";
 
         return {
             success: true,
             data: {
-                backgroundUuid: user.backgroundIcon.id,
-                backgroundPath: backgroundPath.filePath,
+                backgroundUrl: r2Base ? `${r2Base}/${user.backgroundIcon.id}` : null,
             },
         };
     },

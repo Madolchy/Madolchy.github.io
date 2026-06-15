@@ -2,6 +2,8 @@ import { prisma } from "../client/prisma.js";
 import z from "zod";
 import path from "node:path";
 import fs from "node:fs";
+import type { FileManager } from "../interfaces/storage.js";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const UploadPayloadSchema = z.object({
     id: z.string().optional(),
@@ -13,6 +15,69 @@ const UploadPayloadSchema = z.object({
 });
 
 const cellSchema = z.number().int().min(0).max(255);
+
+export type R2Config = {
+    endpoint: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    bucketName: string;
+};
+
+export class R2FileManager implements FileManager {
+    private R2Client: S3Client;
+    private bucketName: string;
+
+    constructor(config: R2Config) {
+        if (!config.endpoint || !config.accessKeyId || !config.secretAccessKey || !config.bucketName) {
+            throw new Error("Missing R2 credentials endpoint, accessKeyId, secretAccessKey and bucketName required.");
+        }
+
+        this.R2Client = new S3Client({
+            region: "auto",
+            endpoint: config.endpoint,
+            credentials: {
+                accessKeyId: config.accessKeyId,
+                secretAccessKey: config.secretAccessKey,
+            },
+        });
+
+        this.bucketName = config.bucketName;
+    }
+
+    async registerFile(uuid: string, buffer: Buffer): Promise<any> {
+        const response = await this.R2Client.send(
+            new PutObjectCommand({
+                Bucket: this.bucketName,
+                Key: uuid,
+                Body: buffer,
+            }),
+        );
+
+        return true;
+    }
+
+    async getFile(uuid: string): Promise<Uint8Array> {
+        const response = await this.R2Client.send(
+            new GetObjectCommand({
+                Bucket: this.bucketName,
+                Key: uuid,
+            }),
+        );
+
+        return response.Body?.transformToByteArray();
+    }
+
+    async deleteFile(uuid: string): Promise<any> {
+        const response = await this.R2Client.send(
+            new DeleteObjectCommand({
+                Bucket: this.bucketName,
+                Key: uuid,
+            }),
+        );
+
+        return true;
+    }
+}
 
 export const FileManagerService = {
     registerFile: async (uuid, metadata) => {
