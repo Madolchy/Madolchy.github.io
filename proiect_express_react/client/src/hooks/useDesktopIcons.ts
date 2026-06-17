@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileManagerService } from "../services/FileManagerService";
 import { apiClient } from "../client/apiClient";
+
 export function useDesktopIcons(folderId, rows) {
     console.log("Folder id is: ", folderId);
     const queryClient = useQueryClient();

@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-interface WindowManagerContextType {
+export interface WindowManagerContextType {
     windows: any[];
     openWindow: (id: number, data: any) => void;
     closeWindow: (winId: number | string) => void;

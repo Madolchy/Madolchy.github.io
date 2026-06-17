@@ -1,23 +1,17 @@
 .icon-highlight {
-    position: absolute;
-    inset: 0px; 
-    pointer-events: none; 
-    z-index: 1;
-
-    background-color: rgba(0, 0, 255, 0.2); 
-    
-    border: 2px solid #00008b; 
-    
-    border-radius: 8px; 
-
-    background-clip: padding-box; 
-    overflow: hidden; 
+    background-color: rgba(0, 0, 255, 0.2);
+    border: 2px solid #00008b;
+    border-radius: 8px;
+    box-sizing: border-box;
 }
 
 .icon {
     width: var(--box-width, 80);
     height: var(--box-height, 80);
     object-fit: contain;
+
+    content-visibility: auto;
+    contain-intrinsic-size: var(--box-width) var(--box-height);
 }
 
 .icon-grabbable {

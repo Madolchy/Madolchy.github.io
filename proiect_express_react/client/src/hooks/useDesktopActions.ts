@@ -10,12 +10,14 @@ export function useDesktopActions(folderId: string) {
 
     const setBackgroundMutation = useMutation({
         mutationFn: async (uuid: string) => {
-            const blob = await FileManagerService.getRawFile(uuid);
-            if (!blob) throw new Error("File not found");
+            const desktopItems = queryClient.getQueryData<any[]>(["desktopIcons", folderId]);
+            const item = desktopItems?.find((i) => i?.id === uuid);
+            const url = item?.url;
+            if (!url) throw new Error("File URL not found");
 
             await apiClient.post("/background", { json: { backgroundUuid: uuid } });
-            await db.saveBackground(uuid, blob);
-            return { uuid, blob };
+            await db.saveBackground(url, url);
+            return { uuid, url };
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["background"] });

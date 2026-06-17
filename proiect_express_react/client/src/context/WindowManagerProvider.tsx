@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, type ReactNode } from "react";
 import { WindowManagerContext } from "./WindowManagerContext";
 
+// performance bottleneck with desktop, move to a zustand store.
 export function WindowManagerProvider({ children }: { children: ReactNode }) {
     const [windows, setWindows] = useState<any[]>([]);
     const topZIndex = useRef(100);

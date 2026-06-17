@@ -1,6 +1,4 @@
 import { db } from "../store/db";
-import { FileManagerService } from "./FileManagerService";
-import { queryClient } from "../client/queryClient.ts";
 import Pica from "pica";
 
 const pica = new Pica();
@@ -52,23 +50,23 @@ async function generateThumbnail(file: Blob, mimeType: string): Promise<Blob | n
 }
 
 export const ThumbnailService = {
-    getThumbnail: async (uuid: string, type?: string): Promise<Blob | null> => {
+    getThumbnail: async (uuid: string, type?: string, r2Url?: string): Promise<Blob | null> => {
         const cached = await db.getThumbnail(uuid);
         if (cached) return cached;
+
+        if (!r2Url) return null;
 
         const pending = inflightRequests.get(uuid);
         if (pending) return pending;
 
         const promise = (async () => {
             try {
-                const fileBlob = await queryClient.fetchQuery({
-                    queryKey: ["rawFile", uuid],
-                    queryFn: () => FileManagerService.getRawFile(uuid),
-                });
-                if (!fileBlob) return undefined;
+                const res = await fetch(r2Url);
+                if (!res.ok) return undefined;
+                const fileBlob = await res.blob();
 
                 const mimeType = type || fileBlob.type;
-                if (!mimeType || !mimeType.startsWith("image/")) return undefined;
+                if (!mimeType || !mimeType.startsWith("image/")) return null;
 
                 const thumbnail = await generateThumbnail(fileBlob, mimeType);
                 if (thumbnail) {

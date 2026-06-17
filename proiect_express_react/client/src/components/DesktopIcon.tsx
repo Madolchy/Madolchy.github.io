@@ -1,20 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import "./DesktopIcon.css";
 import { FileIconFactory } from "./FileIconFactory";
-import { useBlob } from "../context/BlobContext";
-import { ThumbnailService } from "../services/ThumbnailService";
-import { useQuery } from "@tanstack/react-query";
+import { useThumbnailCache } from "@/hooks/useThumbnailCache";
 import type { DesktopItem } from "@/types/data";
-import { getSelection, resetSelect, useIsSelected } from "@/context/IconSelectionContext";
+import { getSelection, handleSelect, resetSelect, useIsSelected } from "@/context/IconSelectionContext";
+import type { useDesktopDrop } from "@/hooks/useDesktopDrop";
+import type { useWindowManager } from "@/context/WindowManagerContext";
+import type { useDesktopIcons } from "@/hooks/useDesktopIcons";
 
 interface DesktopIconProps {
     id: number;
-    data: DesktopItem;
-    onMouseUpCallback: (currentPosition: number, newPosition: number) => void;
-    onMouseDownCallback: (folderId: string, cell: number, uuid: string) => void;
-    onCellDrop: (e: React.DragEvent, cellId: number) => void;
-    onDoubleClick: (id: number, data: any) => void;
-    onContextMenu: (e: React.MouseEvent, id: number) => void;
+    data: DesktopItem | undefined;
+    onMouseUpCallback: ReturnType<typeof useDesktopIcons>["handleSwap"];
+    onMouseDownCallback: typeof handleSelect;
+    onCellDrop: ReturnType<typeof useDesktopDrop>;
+    onDoubleClick: ReturnType<typeof useWindowManager>["openWindow"];
+    onContextMenu: (e: React.MouseEvent, id: number) => void; // need to that function from desktop to somewhere else
 }
 
 const DesktopIcon = React.memo(
@@ -28,49 +29,45 @@ const DesktopIcon = React.memo(
         onContextMenu,
     }: DesktopIconProps) => {
         const isSelected = useIsSelected(id, data?.folderId ?? "root");
-        const [thumbUrl, setThumbUrl] = useState<string | null>(null);
-        const { getUrl, revokeUrl } = useBlob();
+        const { id: itemId, type, url } = data ?? {};
+        const thumbUrl = useThumbnailCache({ id: itemId, type, url });
 
-        const { data: blob } = useQuery({
-            queryKey: ["file", data?.id],
-            queryFn: () => ThumbnailService.getThumbnail(data?.id, data?.type),
-            staleTime: Infinity,
-            enabled: !!data?.id && data?.type !== "type/folder",
-        });
+        function handleMouseDown(e: React.MouseEvent) {
+            const isRightClick = () => e.button === 2;
 
-        useEffect(() => {
-            if (!blob) return;
+            if (isRightClick()) onContextMenu(e, id);
+            else onMouseDownCallback(data?.folderId ?? "root", id, data?.id);
+        }
 
-            const url = getUrl(data?.id, blob);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setThumbUrl(url);
-            return () => {
-                revokeUrl(data?.id);
-            };
-        }, [blob, data?.id, data?.thumbnail, getUrl, revokeUrl]);
+        function handleDoubleClick(e: React.MouseEvent) {
+            e.stopPropagation();
+            onDoubleClick(id, data);
+        }
 
+        function handleMouseUp() {
+            const sel = getSelection();
+            if (!sel) return;
+
+            onMouseUpCallback(sel.cell, id);
+            resetSelect();
+        }
         return (
             <div
                 id={`icon-${id}`}
-                className="relative text-foreground bg-transparent flex items-center justify-center"
+                className="relative text-foreground bg-transparent flex flex-col items-center justify-start"
                 draggable={false}
                 onMouseDown={(e) => {
-                    if (e.button === 2) onContextMenu(e, id);
-                    else onMouseDownCallback(data.folderId, id, data?.id);
+                    handleMouseDown(e);
                 }}
-                onMouseUp={(e) => {
-                    const sel = getSelection();
-                    if (!sel) return;
-                    onMouseUpCallback(sel.cell, id);
-                    resetSelect();
+                onMouseUp={() => {
+                    handleMouseUp();
                 }}
                 onDragStart={(e) => e.preventDefault()}
                 onDrop={(e) => onCellDrop(e, id)}
                 onDragOver={(e) => e.preventDefault()}
                 onDragLeave={(e) => e.preventDefault()}
                 onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    if (onDoubleClick) onDoubleClick(id, data);
+                    handleDoubleClick(e);
                 }}
             >
                 <div
@@ -79,6 +76,11 @@ const DesktopIcon = React.memo(
                 >
                     <FileIconFactory type={data?.type} thumbUrl={thumbUrl} />
                 </div>
+                <span
+                    className={`text-xs text-center mt-1 pointer-events-none select-none w-full shrink-0 ${isSelected ? "whitespace-normal wrap-break-word" : "truncate"}`}
+                >
+                    {data?.name}
+                </span>
             </div>
         );
     },

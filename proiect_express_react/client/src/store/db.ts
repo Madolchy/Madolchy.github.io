@@ -63,10 +63,10 @@ export const db = {
         }
     },
 
-    saveBackground: async (uuid: string, blob: Blob) => {
+    saveBackground: async (uuid: string, url: string) => {
         try {
             const db = await getDB();
-            await db.put(STORE_NAME, { uuid: uuid, backgroundBlob: blob }, "background");
+            await db.put(STORE_NAME, { uuid, backgroundUrl: url }, "background");
         } catch (error) {
             console.error("Failed to save background:", error);
         }

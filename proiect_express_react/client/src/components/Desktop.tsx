@@ -11,7 +11,8 @@ import { useDesktopManager } from "@/context/DesktopManagerContext";
 import { useDesktopActions } from "@/hooks/useDesktopActions";
 import { useContextMenu } from "@/context/ContextMenuContext";
 import { useDesktopDrop } from "@/hooks/useDesktopDrop";
-import { handleSelect, resetSelect } from "@/context/IconSelectionContext";
+import { handleSelect } from "@/context/IconSelectionContext";
+import type { DesktopItem } from "@/types/data";
 
 export default function Desktop({ folderId = "root", boxPerRow = 16 }) {
     const [boxNumberPerRow] = useState(boxPerRow);
@@ -43,12 +44,10 @@ export default function Desktop({ folderId = "root", boxPerRow = 16 }) {
             onContextMenu={(e) => e.preventDefault()}
             backgroundImage={backgroundUrl}
         >
-            {gridData.map((data: any, index: number) => (
+            {gridData.map((data: DesktopItem, index: number) => (
                 <DesktopIcon
-                    key={data?.id || index}
                     id={index}
                     data={data}
-                    resetSelect={resetSelect}
                     onMouseUpCallback={handleSwap}
                     onMouseDownCallback={handleSelect}
                     onCellDrop={onCellDrop}

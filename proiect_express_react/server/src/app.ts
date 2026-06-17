@@ -100,16 +100,20 @@ app.get("/api/desktop", VisitCounter, requireLogin, async (req: Request, res: Re
     const folderId = req.query.folderId;
     const items = await DBService.getUserDesktop(uuid, folderId);
     if (!items) return res.status(400).json({});
+
     const r2Base = process.env.R2_PUBLIC_URL || "";
     const withUrl = items.map((item) => ({ ...item, url: r2Base ? `${r2Base}/${item.id}` : undefined }));
+
     return res.status(200).json(withUrl);
 });
 
 app.put("/api/desktop", requireLogin, async (req: Request, res: Response) => {
     const uuid = req.auth.id;
     const { folderId, newDesktop } = req.body;
+
     console.log("Folder id is: ", folderId);
     const result = await DBService.updateUserDesktop(uuid, folderId, newDesktop);
+
     console.log(result.message);
     if (!result.success) {
         console.log("Failed with: ", result.message);

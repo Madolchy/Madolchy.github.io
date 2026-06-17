@@ -27,19 +27,18 @@ export const FileManagerService = {
     getUserBackground: async () => {
         const response = await apiClient.get("background");
         if (!response.ok) return undefined;
-        const { backgroundUuid } = await response.json();
+        const { backgroundUrl } = await response.json();
 
-        if (!backgroundUuid) return undefined;
+        if (!backgroundUrl) return null;
 
         const cached = await db.getBackground();
-        if (cached?.backgroundBlob && cached.uuid === backgroundUuid) {
-            return { backgroundUuid: cached.uuid, backgroundBlob: cached.backgroundBlob };
+        if (cached?.backgroundUrl && cached.uuid === backgroundUrl) {
+            return { backgroundUrl: cached.backgroundUrl };
         }
 
-        const backgroundBlob = await FileManagerService.getRawFile(backgroundUuid);
-        await db.saveBackground(backgroundUuid, backgroundBlob);
+        await db.saveBackground(backgroundUrl, backgroundUrl);
 
-        return { backgroundUuid, backgroundBlob };
+        return { backgroundUrl };
     },
 
     getRawFile: async (fileUuid: string): Promise<Blob | undefined> => {

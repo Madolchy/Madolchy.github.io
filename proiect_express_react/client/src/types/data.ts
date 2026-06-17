@@ -6,4 +6,5 @@ export type DesktopItem = {
     bytes: number | null;
     userId: string;
     folderId: string | null;
+    url?: string;
 };
