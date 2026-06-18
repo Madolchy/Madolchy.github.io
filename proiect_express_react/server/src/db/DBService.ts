@@ -5,6 +5,8 @@ import { prisma } from "../client/prisma.js";
 import { AuthService } from "../services/AuthService.js";
 import { LoginSchema, SignupRequestSchema } from "../types/login.js";
 import type { User } from "../generated/prisma/client.js";
+import type { FileManager } from "../interfaces/storage.js";
+import { logger } from "../app.js";
 
 interface DesktopItemData {
     id: string;
@@ -17,18 +19,8 @@ interface DesktopItemData {
 
 // ── Private helpers ──
 
-async function getRootFolder(uuid: string) {
-    const root = await prisma.folder.findFirst({
-        where: { userId: uuid, parentId: null },
-    });
-    if (!root) throw new Error(`Root folder not found for user ${uuid}`);
-    return root;
-}
-
-async function resolveFolderId(uuid: string, raw: string): Promise<string> {
-    if (raw !== "root") return raw;
-    const root = await getRootFolder(uuid);
-    return root.id;
+function resolveFolderId(rootFolderId: string, raw: string): string {
+    return raw === "root" ? rootFolderId : raw;
 }
 
 async function bumpVersion(folderId: string) {
@@ -50,7 +42,7 @@ export const DBService = {
         const { password, ...publicValidData } = validationResult.data;
         const uuid = uuidv4();
 
-        await prisma.user.create({
+        const user = await prisma.user.create({
             data: {
                 ...publicValidData,
                 passwordHash: password,
@@ -59,9 +51,10 @@ export const DBService = {
                     create: { name: "root", cell: 0, parentId: null },
                 },
             },
+            include: { folders: { where: { parentId: null }, select: { id: true } } },
         });
 
-        return { success: true };
+        return { success: true, rootFolderId: user.folders[0].id };
     },
 
     loginUser: async (req: Request) => {
@@ -71,7 +64,7 @@ export const DBService = {
         }
 
         const { email, password } = validationResult.data;
-        const user = await prisma.user.findFirst({ where: { email: email } });
+        const user = await prisma.user.findUnique({ where: { email: email } });
 
         if (!user) {
             return { success: false, message: "Invalid email or password" };
@@ -82,8 +75,17 @@ export const DBService = {
             return { success: false, message: "Invalid email or password" };
         }
 
-        const token = AuthService.generateToken({ id: user.uuid });
-        const refreshToken = AuthService.generateRefreshToken({ id: user.uuid });
+        const rootFolder = await prisma.folder.findFirst({
+            where: { userId: user.uuid, parentId: null },
+            select: { id: true },
+        });
+
+        if (!rootFolder) {
+            return { success: false, message: "Root folder not found" };
+        }
+
+        const token = AuthService.generateToken({ id: user.uuid, rootFolderId: rootFolder.id });
+        const refreshToken = AuthService.generateRefreshToken({ id: user.uuid, rootFolderId: rootFolder.id });
 
         return { success: true, token: token, refreshToken: refreshToken };
     },
@@ -92,9 +94,7 @@ export const DBService = {
         return { success: true };
     },
 
-    getUserBackground: async (req: Request) => {
-        const uuid = req.auth.id;
-
+    getUserBackground: async (uuid: string, fm: FileManager) => {
         const user = await prisma.user.findUnique({
             where: { uuid: uuid },
             select: {
@@ -108,26 +108,16 @@ export const DBService = {
             return { success: true, message: "User has no background set", data: null };
         }
 
-        // it should pass the file manager here instead of using raw
-        const r2Base = process.env.R2_PUBLIC_URL || "";
-
         return {
             success: true,
             data: {
-                backgroundUrl: r2Base ? `${r2Base}/${user.backgroundIcon.id}` : null,
+                backgroundUrl: fm.getFileUrl(user.backgroundIcon.id),
             },
         };
     },
 
-    setUserBackground: async (req: Request) => {
-        const uuid = req.auth.id;
-        const { backgroundUuid } = req.body;
-
-        if (!backgroundUuid) {
-            return { success: false, message: "No backgroundUuid provided" };
-        }
-
-        const icon = await prisma.desktopItem.findFirst({
+    setUserBackground: async (uuid: string, backgroundUuid: string) => {
+        const icon = await prisma.desktopItem.findUnique({
             where: { id: backgroundUuid, user: { uuid: uuid } },
             select: { id: true },
         });
@@ -144,8 +134,8 @@ export const DBService = {
         return { success: true };
     },
 
-    getUserDesktop: async (uuid: string, folderId: string) => {
-        const actualFolderId = await resolveFolderId(uuid, folderId);
+    getUserDesktop: async (uuid: string, rootFolderId: string, folderId: string) => {
+        const actualFolderId = resolveFolderId(rootFolderId, folderId);
 
         const [folder, items, childFolders] = await Promise.all([
             prisma.folder.findUnique({ where: { id: actualFolderId }, select: { version: true } }),
@@ -153,18 +143,23 @@ export const DBService = {
             prisma.folder.findMany({ where: { userId: uuid, parentId: actualFolderId } }),
         ]);
 
-        const files = items.map((item) => ({ ...item }));
         const folders = childFolders.map((f) => ({
             ...f,
             type: "type/folder",
             folderId: f.parentId ?? actualFolderId,
         }));
 
-        return { items: [...files, ...folders], version: folder?.version ?? 0 };
+        return { items: [...items, ...folders], version: folder?.version ?? 0 };
     },
 
-    updateUserDesktop: async (uuid: string, folderId: string, newDesktop: DesktopItemData[], version: number) => {
-        const actualFolderId = await resolveFolderId(uuid, folderId);
+    updateUserDesktop: async (
+        uuid: string,
+        rootFolderId: string,
+        folderId: string,
+        newDesktop: DesktopItemData[],
+        version: number,
+    ) => {
+        const actualFolderId = resolveFolderId(rootFolderId, folderId);
 
         const current = await prisma.folder.findUnique({
             where: { id: actualFolderId },
@@ -238,18 +233,19 @@ export const DBService = {
         await prisma.desktopItem.deleteMany({ where: { folderId: { in: allIds }, userId: uuid } });
         await prisma.folder.deleteMany({ where: { id: { in: allIds }, userId: uuid } });
 
-        if (folder.parentId) {
-            await bumpVersion(folder.parentId);
-        }
+        await bumpVersion(folder.parentId);
 
         return { success: true };
     },
 
-    createUserFolder: async (uuid: string, folderName: string, parentFolderId: string, cell: number) => {
-        const user = await DBService.getUser(uuid);
-        if (!user) return { success: false, message: "User not found" };
-
-        const actualParentId = await resolveFolderId(uuid, parentFolderId);
+    createUserFolder: async (
+        uuid: string,
+        rootFolderId: string,
+        folderName: string,
+        parentFolderId: string,
+        cell: number,
+    ) => {
+        const actualParentId = resolveFolderId(rootFolderId, parentFolderId);
 
         try {
             const folder = await prisma.folder.create({

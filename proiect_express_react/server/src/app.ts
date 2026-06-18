@@ -7,12 +7,19 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import helmet from "helmet";
 import cors from "cors";
+import pino from "pino";
 import { isProd, port, bindAddress, storageBackend } from "./settings.js";
 import { R2FileManager } from "./services/FileManagerService.js";
 import { createFileTransferRouter } from "./routers/fileManagers/FileTransferRouter.js";
 import type { FileManager } from "./interfaces/storage.js";
 import { authRouter } from "./routers/Authenticator.js";
-import { desktopRouter } from "./routers/DesktopRouter.js";
+import { createDesktopRouter } from "./routers/DesktopRouter.js";
+
+export const logger = pino({
+    transport: {
+        target: "pino-pretty",
+    },
+});
 
 function createFileManager(): FileManager {
     switch (storageBackend) {
@@ -22,6 +29,7 @@ function createFileManager(): FileManager {
                 accessKeyId: process.env.R2_ACCESS_KEY_ID!,
                 secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
                 bucketName: process.env.R2_RW_BUCKET!,
+                devUrl: process.env.R2_PUBLIC_URL!,
             });
         case "local":
             throw new Error(`Storage backend "${storageBackend}" not implemented yet.`);
@@ -51,8 +59,8 @@ app.use(cookieParser());
 
 const fm = createFileManager();
 app.use("/api", createFileTransferRouter(fm));
+app.use("/api", createDesktopRouter(fm));
 app.use("/api", authRouter);
-app.use("/api", desktopRouter);
 
 // --- GLOBAL ERROR HANDLER ---
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

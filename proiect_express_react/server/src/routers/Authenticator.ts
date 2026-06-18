@@ -4,6 +4,7 @@ import ms from "ms";
 import { DBService } from "../db/DBService.js";
 import { AuthService } from "../services/AuthService.js";
 import { requireLogin } from "../middleware/RequireLogin.js";
+import { logger } from "../app.js";
 
 const authRouter = Router();
 const isProd = process.env.NODE_ENV === "production";
@@ -54,7 +55,7 @@ authRouter.post("/refresh", async (req: Request, res: Response) => {
     const decoded = AuthService.verifyRefreshToken(refreshToken);
     if (!decoded) return res.status(401).json({ success: false, message: "Invalid refresh token" });
 
-    const token = AuthService.generateToken({ id: decoded.id });
+    const token = AuthService.generateToken({ id: decoded.id, rootFolderId: decoded.rootFolderId });
     return res.status(200).json({ success: true, token: token });
 });
 

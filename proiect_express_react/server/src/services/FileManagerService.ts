@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import type { FileManager } from "../interfaces/storage.js";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { logger } from "../app.js";
 
 const UploadPayloadSchema = z.object({
     id: z.string().optional(),
@@ -21,11 +22,13 @@ export type R2Config = {
     accessKeyId: string;
     secretAccessKey: string;
     bucketName: string;
+    devUrl: string | null;
 };
 
 export class R2FileManager implements FileManager {
     private R2Client: S3Client;
     private bucketName: string;
+    private devUrl: string | null;
 
     constructor(config: R2Config) {
         if (!config.endpoint || !config.accessKeyId || !config.secretAccessKey || !config.bucketName) {
@@ -41,10 +44,13 @@ export class R2FileManager implements FileManager {
             },
         });
 
+        if (!config.devUrl) logger.info("[R2] No devUrl provided, some endpoints are not accesible.");
+        this.devUrl = config.devUrl;
+
         this.bucketName = config.bucketName;
     }
 
-    async registerFile(uuid: string, buffer: Buffer): Promise<any> {
+    async registerFile(uuid: string, buffer: Buffer) {
         await this.R2Client.send(
             new PutObjectCommand({
                 Bucket: this.bucketName,
@@ -55,7 +61,7 @@ export class R2FileManager implements FileManager {
         return true;
     }
 
-    async getFile(uuid: string): Promise<Uint8Array> {
+    async getFile(uuid: string) {
         const response = await this.R2Client.send(
             new GetObjectCommand({
                 Bucket: this.bucketName,
@@ -63,7 +69,13 @@ export class R2FileManager implements FileManager {
             }),
         );
 
-        return response.Body?.transformToByteArray();
+        return response.Body!.transformToByteArray();
+    }
+
+    getFileUrl(id: string) {
+        if (this.devUrl === null) throw new Error("[R2] Tried to grab a dev url while one wasn't provided.");
+
+        return new URL(`${this.devUrl}/${id}`);
     }
 
     async deleteFile(uuid: string): Promise<any> {

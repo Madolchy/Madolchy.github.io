@@ -7,11 +7,11 @@ if (!JWT_SECRET) {
 }
 
 export const AuthService = {
-    generateToken: (payload: { id: string }) => {
+    generateToken: (payload: { id: string; rootFolderId: string }) => {
         return jwt.sign({ ...payload, tokenType: "active" }, JWT_SECRET as jwt.Secret, { expiresIn: "20m" });
     },
 
-    generateRefreshToken: (payload: { id: string }) => {
+    generateRefreshToken: (payload: { id: string; rootFolderId: string }) => {
         return jwt.sign({ ...payload, tokenType: "refresh" }, JWT_SECRET as jwt.Secret, { expiresIn: "7d" });
     },
 
@@ -19,7 +19,6 @@ export const AuthService = {
         try {
             const decoded = jwt.verify(token, JWT_SECRET as jwt.Secret);
 
-            // Explicitly check that this is a refresh token
             if (decoded.tokenType !== "refresh") {
                 console.error("Attempted to use a non-refresh token for a refresh operation");
                 return null;
