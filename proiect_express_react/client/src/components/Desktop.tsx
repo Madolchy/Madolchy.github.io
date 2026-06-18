@@ -46,6 +46,7 @@ export default function Desktop({ folderId = "root", boxPerRow = 16 }) {
         >
             {gridData.map((data: DesktopItem, index: number) => (
                 <DesktopIcon
+                    key={data?.id || index}
                     id={index}
                     data={data}
                     onMouseUpCallback={handleSwap}

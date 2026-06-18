@@ -18,6 +18,8 @@ export function createFileTransferRouter(fm: FileManager) {
         const uuid = req.auth.id;
         const fileId = crypto.randomBytes(12).toString("hex");
         const cell = parseInt(req.body.index, 10);
+        const folderId = req.body.folderPath;
+        if (!folderId) return res.status(400).json({ success: false, message: "folderPath required" });
 
         const metadata = {
             id: fileId,
@@ -25,7 +27,7 @@ export function createFileTransferRouter(fm: FileManager) {
             fileType: file.mimetype,
             bytes: file.size,
             cell,
-            folderId: req.body.folderPath,
+            folderId,
         };
 
         return Promise.all([

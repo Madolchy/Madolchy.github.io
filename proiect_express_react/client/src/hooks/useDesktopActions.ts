@@ -49,9 +49,23 @@ export function useDesktopActions(folderId: string) {
         },
     });
 
+    const deleteFolderMutation = useMutation({
+        mutationFn: async (targetFolderId: string) => {
+            await FileManagerService.deleteFolder(targetFolderId);
+            return targetFolderId;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["desktopIcons", folderId] });
+        },
+        onError: (err) => {
+            console.error("Folder deletion failed with: ", err);
+        },
+    });
+
     const { mutate: bgMutate, isPending: bgIsPending } = setBackgroundMutation;
     const { mutate: deleteMutate, isPending: deleteIsPending } = deleteFileMutation;
     const { mutate: addFolderMutate, isPending: folderIsPending } = addFolderMutation;
+    const { mutate: deleteFolderMutate, isPending: deleteFolderIsPending } = deleteFolderMutation;
 
     const getActionsForId = useCallback(
         (id: number | null): ContextAction[] => {
@@ -69,11 +83,19 @@ export function useDesktopActions(folderId: string) {
             }
 
             if (activeData) {
-                actions.push({
-                    contextName: "Delete",
-                    contextAction: () => deleteMutate(activeData.id),
-                    isDisabled: deleteIsPending,
-                });
+                if (activeData.type === "type/folder") {
+                    actions.push({
+                        contextName: "Delete Folder",
+                        contextAction: () => deleteFolderMutate(activeData.id),
+                        isDisabled: deleteFolderIsPending,
+                    });
+                } else {
+                    actions.push({
+                        contextName: "Delete",
+                        contextAction: () => deleteMutate(activeData.id),
+                        isDisabled: deleteIsPending,
+                    });
+                }
             }
 
             if (!activeData) {
@@ -93,7 +115,18 @@ export function useDesktopActions(folderId: string) {
 
             return actions;
         },
-        [addFolderMutate, bgIsPending, bgMutate, deleteIsPending, deleteMutate, folderId, folderIsPending, queryClient],
+        [
+            addFolderMutate,
+            bgIsPending,
+            bgMutate,
+            deleteIsPending,
+            deleteMutate,
+            deleteFolderIsPending,
+            deleteFolderMutate,
+            folderId,
+            folderIsPending,
+            queryClient,
+        ],
     );
 
     return {

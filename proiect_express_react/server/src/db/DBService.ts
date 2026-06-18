@@ -1,13 +1,10 @@
-import type { Request, Response } from "express";
-import z, { success } from "zod";
+import type { Request } from "express";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "../client/prisma.js";
 import { AuthService } from "../services/AuthService.js";
-import { FileManagerService } from "../services/FileManagerService.js";
 import { LoginSchema, SignupRequestSchema } from "../types/login.js";
 import type { User } from "../generated/prisma/client.js";
-import type { PrismaPromise } from "../generated/prisma/internal/prismaNamespace.js";
 
 interface DesktopItemData {
     id: string;
@@ -15,8 +12,33 @@ interface DesktopItemData {
     name: string;
     cell: number;
     bytes?: number | null;
-    folderId?: string | null;
+    folderId: string;
 }
+
+// ── Private helpers ──
+
+async function getRootFolder(uuid: string) {
+    const root = await prisma.folder.findFirst({
+        where: { userId: uuid, parentId: null },
+    });
+    if (!root) throw new Error(`Root folder not found for user ${uuid}`);
+    return root;
+}
+
+async function resolveFolderId(uuid: string, raw: string): Promise<string> {
+    if (raw !== "root") return raw;
+    const root = await getRootFolder(uuid);
+    return root.id;
+}
+
+async function bumpVersion(folderId: string) {
+    await prisma.folder.update({
+        where: { id: folderId },
+        data: { version: { increment: 1 } },
+    });
+}
+
+// ── Public API ──
 
 export const DBService = {
     registerUser: async (req: Request) => {
@@ -33,8 +55,8 @@ export const DBService = {
                 ...publicValidData,
                 passwordHash: password,
                 uuid: uuid,
-                items: {
-                    create: { type: "type/folder", name: "root", cell: 0 },
+                folders: {
+                    create: { name: "root", cell: 0, parentId: null },
                 },
             },
         });
@@ -49,11 +71,7 @@ export const DBService = {
         }
 
         const { email, password } = validationResult.data;
-        const user = await prisma.user.findFirst({
-            where: {
-                email: email,
-            },
-        });
+        const user = await prisma.user.findFirst({ where: { email: email } });
 
         if (!user) {
             return { success: false, message: "Invalid email or password" };
@@ -70,7 +88,7 @@ export const DBService = {
         return { success: true, token: token, refreshToken: refreshToken };
     },
 
-    logoutUser: async (req: Request) => {
+    logoutUser: async (_req: Request) => {
         return { success: true };
     },
 
@@ -80,23 +98,17 @@ export const DBService = {
         const user = await prisma.user.findUnique({
             where: { uuid: uuid },
             select: {
-                backgroundIcon: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
+                backgroundIcon: { select: { id: true, name: true } },
             },
         });
 
-        if (!user) {
-            return { success: false, message: "User not found" };
-        }
+        if (!user) return { success: false, message: "User not found" };
 
         if (!user.backgroundIcon) {
             return { success: true, message: "User has no background set", data: null };
         }
 
+        // it should pass the file manager here instead of using raw
         const r2Base = process.env.R2_PUBLIC_URL || "";
 
         return {
@@ -115,12 +127,8 @@ export const DBService = {
             return { success: false, message: "No backgroundUuid provided" };
         }
 
-        console.log("Trying to get icon: ", backgroundUuid, " by user: ", uuid);
         const icon = await prisma.desktopItem.findFirst({
-            where: {
-                id: backgroundUuid,
-                user: { uuid: uuid },
-            },
+            where: { id: backgroundUuid, user: { uuid: uuid } },
             select: { id: true },
         });
 
@@ -136,119 +144,126 @@ export const DBService = {
         return { success: true };
     },
 
-    updateUserDesktop: async (uuid: string, folderId: string, newDesktop: DesktopItemData[]) => {
-        if (!uuid || !newDesktop) {
-            return { success: false, message: "Uuid or new desktop positions are missing" };
+    getUserDesktop: async (uuid: string, folderId: string) => {
+        const actualFolderId = await resolveFolderId(uuid, folderId);
+
+        const [folder, items, childFolders] = await Promise.all([
+            prisma.folder.findUnique({ where: { id: actualFolderId }, select: { version: true } }),
+            prisma.desktopItem.findMany({ where: { userId: uuid, folderId: actualFolderId } }),
+            prisma.folder.findMany({ where: { userId: uuid, parentId: actualFolderId } }),
+        ]);
+
+        const files = items.map((item) => ({ ...item }));
+        const folders = childFolders.map((f) => ({
+            ...f,
+            type: "type/folder",
+            folderId: f.parentId ?? actualFolderId,
+        }));
+
+        return { items: [...files, ...folders], version: folder?.version ?? 0 };
+    },
+
+    updateUserDesktop: async (uuid: string, folderId: string, newDesktop: DesktopItemData[], version: number) => {
+        const actualFolderId = await resolveFolderId(uuid, folderId);
+
+        const current = await prisma.folder.findUnique({
+            where: { id: actualFolderId },
+            select: { version: true },
+        });
+        if (!current || version < current.version) {
+            return { success: false, message: "Version conflict" };
         }
 
-        const user = await DBService.getUser(uuid);
-        if (!user) {
-            return { success: false, message: "User not found" };
-        }
+        const ops: Promise<any>[] = [];
 
-        const userDesktop = await prisma.desktopItem.findMany({
-            where: { userId: uuid, folderId: folderId },
-        });
-        if (!userDesktop) {
-            return { success: false, message: "Failed to get user desktop" };
-        }
-
-        console.log("Old Desktop: ", userDesktop, " new desktop: ", newDesktop);
-
-        const newDesktopMap = new Map(newDesktop.map((icon) => [icon.id, icon]));
-        const existingIds = new Set(userDesktop.map((icon) => icon.id));
-
-        const ops: PrismaPromise<any>[] = [];
-
-        // 1. Delete items removed from desktop
-        const toDelete = userDesktop.filter((old) => !newDesktopMap.has(old.id));
-        toDelete.forEach((item) => {
-            ops.push(prisma.desktopItem.delete({ where: { id: item.id } }));
-        });
-
-        // 2. Create new items not yet in DB
-        const seenIds = new Set(existingIds);
-        const toCreate = newDesktop.filter((item) => {
-            if (seenIds.has(item.id)) return false;
-            seenIds.add(item.id);
-            return true;
-        });
-        toCreate.forEach((item) => {
-            ops.push(
-                prisma.desktopItem.create({
-                    data: {
-                        id: item.id,
-                        type: item.type,
-                        name: item.name,
-                        bytes: item.bytes,
-                        cell: item.cell,
-                        userId: uuid,
-                        ...(item.folderId ? { folderId: item.folderId } : {}),
-                    },
-                }),
-            );
-        });
-
-        userDesktop.forEach((oldItem) => {
-            const match = newDesktopMap.get(oldItem.id);
-            if (!match) return;
-
-            if (oldItem.cell !== match.cell) {
+        for (const item of newDesktop) {
+            if (item.type === "type/folder") {
                 ops.push(
-                    prisma.desktopItem.update({
-                        where: { id: oldItem.id },
-                        data: { cell: match.cell },
+                    prisma.folder.updateMany({
+                        where: { id: item.id, userId: uuid },
+                        data: { cell: item.cell },
+                    }),
+                );
+            } else {
+                ops.push(
+                    prisma.desktopItem.updateMany({
+                        where: { id: item.id, userId: uuid },
+                        data: { cell: item.cell },
                     }),
                 );
             }
-        });
-
-        if (ops.length === 0) {
-            return { success: true, message: "No updates necessary", data: newDesktop };
         }
 
+        if (ops.length === 0) return { success: true };
+
         try {
-            await prisma.$transaction(ops);
-            console.log(`Desktop synced: ${toDelete.length} deleted, ${toCreate.length} created, rest updated.`);
+            await Promise.all(ops);
         } catch (error) {
             console.error("Desktop sync failed!", error);
-            return { success: false, message: "Database sync failed during transaction" };
+            return { success: false, message: "Sync failed" };
         }
 
-        return { success: true, message: "Desktop synced successfully", data: newDesktop };
+        await prisma.folder.update({
+            where: { id: actualFolderId },
+            data: { version },
+        });
+        return { success: true };
     },
 
-    createUserFolder: async (uuid: string, folderName: string, folderId: string, cell: number) => {
-        const user = await DBService.getUser(uuid);
-        if (!user) {
-            return { success: false, message: "User not found" };
+    /** Collect all folder IDs in the subtree rooted at the given folder IDs. */
+    _collectDescendantFolderIds: async (uuid: string, rootIds: string[]): Promise<string[]> => {
+        const result = [...rootIds];
+        const queue = [...rootIds];
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            const children = await prisma.folder.findMany({
+                where: { parentId: current, userId: uuid },
+                select: { id: true },
+            });
+            for (const child of children) {
+                result.push(child.id);
+                queue.push(child.id);
+            }
+        }
+        return result;
+    },
+
+    deleteFolder: async (uuid: string, folderId: string) => {
+        const folder = await prisma.folder.findFirst({ where: { id: folderId, userId: uuid } });
+        if (!folder) return { success: false, message: "Folder not found" };
+        if (!folder.parentId) return { success: false, message: "Cannot delete root folder" };
+
+        const allIds = await DBService._collectDescendantFolderIds(uuid, [folderId]);
+
+        await prisma.desktopItem.deleteMany({ where: { folderId: { in: allIds }, userId: uuid } });
+        await prisma.folder.deleteMany({ where: { id: { in: allIds }, userId: uuid } });
+
+        if (folder.parentId) {
+            await bumpVersion(folder.parentId);
         }
 
+        return { success: true };
+    },
+
+    createUserFolder: async (uuid: string, folderName: string, parentFolderId: string, cell: number) => {
+        const user = await DBService.getUser(uuid);
+        if (!user) return { success: false, message: "User not found" };
+
+        const actualParentId = await resolveFolderId(uuid, parentFolderId);
+
         try {
-            const folder = await prisma.desktopItem.create({
-                data: { type: "type/folder", name: folderName, folderId, cell, userId: uuid },
+            const folder = await prisma.folder.create({
+                data: { name: folderName, parentId: actualParentId, cell, userId: uuid },
             });
+            await bumpVersion(actualParentId);
             return { success: true, data: folder };
         } catch (e) {
             const errMsg = e instanceof Error ? e.message : String(e);
             return { success: false, message: "Failed to create folder", error: errMsg };
         }
     },
+
     getUser: async (uuid: string): Promise<User | null> => {
-        const user = await prisma.user.findUnique({
-            where: {
-                uuid: uuid,
-            },
-        });
-        return user;
-    },
-
-    getUserDesktop: async (uuid: string, folderId?: string) => {
-        const items = await prisma.desktopItem.findMany({
-            where: { userId: uuid },
-        });
-
-        const targetFolderId = folderId ?? null;
-        return items.filter((i) => i.folderId === targetFolderId);
+        return prisma.user.findUnique({ where: { uuid: uuid } });
     },
 };

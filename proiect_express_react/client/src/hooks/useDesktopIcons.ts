@@ -1,11 +1,11 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileManagerService } from "../services/FileManagerService";
-import { apiClient } from "../client/apiClient";
 
 export function useDesktopIcons(folderId, rows) {
-    console.log("Folder id is: ", folderId);
     const queryClient = useQueryClient();
+    const versionRef = useRef(0);
+
     const {
         data: gridData,
         isLoading,
@@ -14,8 +14,10 @@ export function useDesktopIcons(folderId, rows) {
         queryKey: ["desktopIcons", folderId],
         queryFn: async () => {
             const raw = await FileManagerService.getUserDesktop(folderId);
+            if (!raw) return undefined;
+            versionRef.current = Math.max(versionRef.current, raw.version);
             const gridArray = Array.from({ length: rows * rows });
-            raw.forEach((el) => {
+            raw.items.forEach((el) => {
                 gridArray[el.cell] = el;
             });
             return gridArray;
@@ -23,23 +25,20 @@ export function useDesktopIcons(folderId, rows) {
         staleTime: Infinity,
     });
 
-    const {
-        mutate: updateDesktop,
-        isLoading: isUpdateLoading,
-        isError: isUpdateError,
-    } = useMutation({
-        mutationFn: (newDesktop) => FileManagerService.putUserDesktop(newDesktop, folderId),
+    const { mutate: updateDesktop } = useMutation({
+        mutationFn: (newDesktop: any[]) => FileManagerService.putUserDesktop(newDesktop, folderId, versionRef.current),
         onMutate: (newDesktop) => {
+            versionRef.current += 1;
+
             queryClient.cancelQueries({ queryKey: ["desktopIcons", folderId] });
 
             const previous = queryClient.getQueryData(["desktopIcons", folderId]);
-
             queryClient.setQueryData(["desktopIcons", folderId], newDesktop);
 
             return { previous };
         },
-        onError: (err, newTodo, context) => {
-            queryClient.setQueryData(["desktopIcons", folderId], context.previous);
+        onError: (_err, _vars, context) => {
+            queryClient.setQueryData(["desktopIcons", folderId], context?.previous);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["desktopIcons", folderId] });
@@ -48,15 +47,12 @@ export function useDesktopIcons(folderId, rows) {
 
     const handleSwap = useCallback(
         (currentPosition: number, newPosition: number) => {
-            console.log("Handling swap yo c:");
-
             if (currentPosition === undefined || currentPosition === newPosition) return;
 
-            const currentData = queryClient.getQueryData(["desktopIcons", folderId]);
+            const currentData = queryClient.getQueryData<any[]>(["desktopIcons", folderId]);
             if (!currentData || currentData.length === 0) return;
 
             const newGrid = [...currentData];
-
             const sourceIcon = newGrid[currentPosition];
             const targetIcon = newGrid[newPosition];
 
@@ -68,10 +64,5 @@ export function useDesktopIcons(folderId, rows) {
         [folderId, queryClient, updateDesktop],
     );
 
-    return {
-        gridData,
-        isLoading,
-        isError,
-        handleSwap,
-    };
+    return { gridData, isLoading, isError, handleSwap };
 }

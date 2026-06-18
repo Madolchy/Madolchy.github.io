@@ -16,11 +16,12 @@ export const FileManagerService = {
         }
     },
 
-    putUserDesktop: async (newDesktop, folderId) => {
+    putUserDesktop: async (newDesktop, folderId, version) => {
         const cleanedDesktop = newDesktop.filter(Boolean);
-        const response = await apiClient.put("desktop", { json: { newDesktop: cleanedDesktop, folderId: folderId } });
+        const response = await apiClient.put("desktop", {
+            json: { newDesktop: cleanedDesktop, folderId, version },
+        });
         if (!response.ok) throw new Error("Failed to update desktop");
-
         return response.json();
     },
 
@@ -78,5 +79,11 @@ export const FileManagerService = {
             throw new Error("Failed to create folder");
         }
         return response.json();
+    },
+    deleteFolder: async (folderId: string): Promise<void> => {
+        const response = await apiClient.delete(`folder/${folderId}`);
+        if (!response.ok) {
+            throw new Error("Failed to delete folder");
+        }
     },
 };

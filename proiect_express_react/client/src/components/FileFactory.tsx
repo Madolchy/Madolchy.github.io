@@ -30,9 +30,8 @@ const TextPreview = ({ url }: { url: string }) => {
     );
 };
 
-const FolderPreview = ({ name }: { name: string }) => {
-    console.log("Welp we making another folder");
-    return <Desktop folderId={name} boxPerRow={4} />;
+const FolderPreview = ({ id }: { id: string }) => {
+    return <Desktop folderId={id} boxPerRow={4} />;
 };
 
 const AudioPreview = ({ url }: { url: string }) => {
@@ -44,6 +43,7 @@ const DefaultPreview = () => null;
 interface FilePreviewProps {
     url?: string;
     name?: string;
+    id?: string;
 }
 
 const previewMap: Record<string, React.ComponentType<FilePreviewProps>> = {
@@ -84,5 +84,5 @@ export const FileFactory = ({ data }: { data: { id: string; type: string; name: 
 
     const PreviewComponent = previewMap[fileType] || DefaultPreview;
 
-    return <PreviewComponent url={url} name={name} />;
+    return <PreviewComponent url={url} name={name} id={uuid} />;
 };

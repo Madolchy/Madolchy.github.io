@@ -25,24 +25,40 @@ model User {
   isPremium        Boolean       @default(false)
   uuid             String        @unique
   items            DesktopItem[] @relation("UserItems")
+  folders          Folder[]
   backgroundIconId String?       @unique @db.ObjectId
   backgroundIcon   DesktopItem?  @relation("UserBackground", fields: [backgroundIconId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model DesktopItem {
+model Folder {
   id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  cell     Int
+  version  Int    @default(0)
+  userId   String
+  parentId String? @db.ObjectId
+
+  user     User          @relation(fields: [userId], references: [uuid], onDelete: Cascade)
+  parent   Folder?       @relation("FolderTree", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Folder[]      @relation("FolderTree")
+  items    DesktopItem[] @relation("FolderItems")
+
+  @@unique([userId, parentId, name])
+}
+
+model DesktopItem {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
   type     String
   name     String
   cell     Int
   /// @zod.custom.use(z.number().int().gte(0).lte(1e+7))
   bytes    Int?
   userId   String
-  folderId String?
+  folderId String @db.ObjectId
 
-  user           User          @relation("UserItems", fields: [userId], references: [uuid], onDelete: NoAction, onUpdate: NoAction)
-  backgroundUser User?         @relation("UserBackground")
-  parent         DesktopItem?  @relation("FolderContents", fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children       DesktopItem[] @relation("FolderContents")
+  user           User         @relation("UserItems", fields: [userId], references: [uuid], onDelete: Cascade)
+  folder         Folder       @relation("FolderItems", fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  backgroundUser User?        @relation("UserBackground")
 
   @@unique([userId, folderId, name])
 }

@@ -11,7 +11,7 @@ const UploadPayloadSchema = z.object({
     fileType: z.string(),
     bytes: z.number().int(),
     cell: z.number().int(),
-    folderId: z.string().optional(),
+    folderId: z.string(),
 });
 
 const cellSchema = z.number().int().min(0).max(255);
@@ -45,14 +45,13 @@ export class R2FileManager implements FileManager {
     }
 
     async registerFile(uuid: string, buffer: Buffer): Promise<any> {
-        const response = await this.R2Client.send(
+        await this.R2Client.send(
             new PutObjectCommand({
                 Bucket: this.bucketName,
                 Key: uuid,
                 Body: buffer,
             }),
         );
-
         return true;
     }
 
@@ -68,27 +67,34 @@ export class R2FileManager implements FileManager {
     }
 
     async deleteFile(uuid: string): Promise<any> {
-        const response = await this.R2Client.send(
+        await this.R2Client.send(
             new DeleteObjectCommand({
                 Bucket: this.bucketName,
                 Key: uuid,
             }),
         );
-
         return true;
     }
 }
 
+async function resolveFolderId(uuid: string, raw: string): Promise<string> {
+    if (raw !== "root") return raw;
+    const root = await prisma.folder.findFirst({
+        where: { userId: uuid, parentId: null },
+    });
+    if (!root) throw new Error(`Root folder not found for user ${uuid}`);
+    return root.id;
+}
+
 export const FileManagerService = {
-    registerFile: async (uuid, metadata) => {
-        console.log(metadata);
+    registerFile: async (uuid: string, metadata: unknown) => {
         const validData = UploadPayloadSchema.safeParse(metadata);
         if (!validData.success) {
-            return { success: false, message: "Got a invalid metadata" };
+            return { success: false, message: "Got invalid metadata" };
         }
 
         const data = validData.data;
-        console.log("Data id is: ", data);
+        const actualFolderId = await resolveFolderId(uuid, data.folderId);
 
         try {
             const result = await prisma.desktopItem.create({
@@ -99,7 +105,7 @@ export const FileManagerService = {
                     bytes: data.bytes,
                     cell: data.cell,
                     userId: uuid,
-                    ...(data.folderId ? { folderId: data.folderId } : {}),
+                    folderId: actualFolderId,
                 },
             });
             return { success: true, data: result };
@@ -168,7 +174,7 @@ export const FileManagerService = {
         }
     },
 
-    swap_items: async (firstCellPayload, secondCellPayload, userUuid) => {
+    swap_items: async (firstCellPayload: unknown, secondCellPayload: unknown, userUuid: string) => {
         const [validFirst, validSecond] = [
             cellSchema.safeParse(firstCellPayload),
             cellSchema.safeParse(secondCellPayload),

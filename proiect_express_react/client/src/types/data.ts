@@ -5,6 +5,6 @@ export type DesktopItem = {
     cell: number;
     bytes: number | null;
     userId: string;
-    folderId: string | null;
+    folderId: string;
     url?: string;
 };
