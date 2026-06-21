@@ -1,71 +1,69 @@
 import type { Request } from "express";
 import bcrypt from "bcrypt";
+import z from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "../client/prisma.js";
-import { AuthService } from "../services/AuthService.js";
 import { LoginSchema, SignupRequestSchema } from "../types/login.js";
-import type { User } from "../generated/prisma/client.js";
+import type { Prisma, User } from "../generated/prisma/client.js";
 import type { FileManager } from "../interfaces/storage.js";
 import { logger } from "../app.js";
+import type { DesktopItem } from "../generated/zod/index.js";
+import type { DesktopItemData } from "../types/desktop.js";
 
-interface DesktopItemData {
-    id: string;
-    type: string;
-    name: string;
-    cell: number;
-    bytes?: number | null;
-    folderId: string;
-}
+// ── Schemas ──
 
-// ── Private helpers ──
+const UploadPayloadSchema = z.object({
+    id: z.string().optional(),
+    name: z.string(),
+    fileType: z.string(),
+    bytes: z.number().int(),
+    cell: z.number().int(),
+    folderId: z.string(),
+});
 
-function resolveFolderId(rootFolderId: string, raw: string): string {
-    return raw === "root" ? rootFolderId : raw;
-}
+const cellSchema = z.number().int().min(0).max(255);
 
-async function bumpVersion(folderId: string) {
-    await prisma.folder.update({
+async function bumpVersion(folderId: string, tx?: any) {
+    const client = tx || prisma;
+
+    await client.folder.update({
         where: { id: folderId },
         data: { version: { increment: 1 } },
     });
 }
 
-// ── Public API ──
-
 export const DBService = {
-    registerUser: async (req: Request) => {
-        const validationResult = SignupRequestSchema.safeParse(req.body);
-        if (!validationResult.success) {
-            return { success: false, message: "Failed to parse the body." };
-        }
-
-        const { password, ...publicValidData } = validationResult.data;
+    registerUser: async (name: string, password: string, email: string) => {
         const uuid = uuidv4();
 
-        const user = await prisma.user.create({
-            data: {
-                ...publicValidData,
-                passwordHash: password,
-                uuid: uuid,
-                folders: {
-                    create: { name: "root", cell: 0, parentId: null },
+        const result = await prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: {
+                    name: name,
+                    email: email,
+                    passwordHash: password,
+                    uuid: uuid,
                 },
-            },
-            include: { folders: { where: { parentId: null }, select: { id: true } } },
+            });
+
+            const folder = await tx.folder.create({
+                data: {
+                    name: "root",
+                    cell: 0,
+                    parentId: null,
+                    userId: user.id,
+                },
+                select: { id: true },
+            });
+
+            return folder.id;
         });
 
-        return { success: true, rootFolderId: user.folders[0].id };
+        return { success: true, rootFolderId: result };
     },
 
-    loginUser: async (req: Request) => {
-        const validationResult = LoginSchema.safeParse(req.body);
-        if (!validationResult.success) {
-            return { success: false, message: "Failed to parse the body" };
-        }
-
-        const { email, password } = validationResult.data;
+    loginUser: async (email: string, password: string) => {
         const user = await prisma.user.findUnique({ where: { email: email } });
-
         if (!user) {
             return { success: false, message: "Invalid email or password" };
         }
@@ -84,26 +82,20 @@ export const DBService = {
             return { success: false, message: "Root folder not found" };
         }
 
-        const token = AuthService.generateToken({ id: user.uuid, rootFolderId: rootFolder.id });
-        const refreshToken = AuthService.generateRefreshToken({ id: user.uuid, rootFolderId: rootFolder.id });
-
-        return { success: true, token: token, refreshToken: refreshToken };
+        return { success: true, user: user, rootFolderId: rootFolder.id };
     },
 
-    logoutUser: async (_req: Request) => {
+    logoutUser: async (uuid: string) => {
         return { success: true };
     },
 
     getUserBackground: async (uuid: string, fm: FileManager) => {
         const user = await prisma.user.findUnique({
-            where: { uuid: uuid },
-            select: {
-                backgroundIcon: { select: { id: true, name: true } },
-            },
+            where: { uuid },
+            include: { backgroundIcon: true },
         });
 
         if (!user) return { success: false, message: "User not found" };
-
         if (!user.backgroundIcon) {
             return { success: true, message: "User has no background set", data: null };
         }
@@ -134,43 +126,24 @@ export const DBService = {
         return { success: true };
     },
 
-    getUserDesktop: async (uuid: string, rootFolderId: string, folderId: string) => {
-        const actualFolderId = resolveFolderId(rootFolderId, folderId);
-
-        const [folder, items, childFolders] = await Promise.all([
-            prisma.folder.findUnique({ where: { id: actualFolderId }, select: { version: true } }),
-            prisma.desktopItem.findMany({ where: { userId: uuid, folderId: actualFolderId } }),
-            prisma.folder.findMany({ where: { userId: uuid, parentId: actualFolderId } }),
-        ]);
-
-        const folders = childFolders.map((f) => ({
-            ...f,
-            type: "type/folder",
-            folderId: f.parentId ?? actualFolderId,
-        }));
-
-        return { items: [...items, ...folders], version: folder?.version ?? 0 };
+    getUserDesktop: async (uuid: string, folderId: string) => {
+        const folder = await prisma.folder.findUnique({
+            where: { id: folderId },
+            select: { version: true, items: { where: { userId: uuid } }, children: { where: { userId: uuid } } },
+        });
+        return { items: folder?.items ?? [], folders: folder?.children ?? [], version: folder?.version ?? 0 };
     },
 
-    updateUserDesktop: async (
-        uuid: string,
-        rootFolderId: string,
-        folderId: string,
-        newDesktop: DesktopItemData[],
-        version: number,
-    ) => {
-        const actualFolderId = resolveFolderId(rootFolderId, folderId);
-
+    updateUserDesktop: async (uuid: string, folderId: string, newDesktop: DesktopItemData[], version: number) => {
         const current = await prisma.folder.findUnique({
-            where: { id: actualFolderId },
+            where: { id: folderId },
             select: { version: true },
         });
         if (!current || version < current.version) {
             return { success: false, message: "Version conflict" };
         }
 
-        const ops: Promise<any>[] = [];
-
+        const ops: any[] = [];
         for (const item of newDesktop) {
             if (item.type === "type/folder") {
                 ops.push(
@@ -190,31 +163,36 @@ export const DBService = {
         }
 
         if (ops.length === 0) return { success: true };
+        ops.push(
+            prisma.folder.update({
+                where: { id: folderId },
+                data: { version },
+            }),
+        );
 
         try {
-            await Promise.all(ops);
+            await prisma.$transaction(ops);
+            return { success: true };
         } catch (error) {
             console.error("Desktop sync failed!", error);
             return { success: false, message: "Sync failed" };
         }
-
-        await prisma.folder.update({
-            where: { id: actualFolderId },
-            data: { version },
-        });
-        return { success: true };
     },
 
     /** Collect all folder IDs in the subtree rooted at the given folder IDs. */
-    _collectDescendantFolderIds: async (uuid: string, rootIds: string[]): Promise<string[]> => {
+    _collectDescendantFolderIds: async (uuid: string, rootIds: string[], tx?: any): Promise<string[]> => {
+        const client = tx || prisma;
+
         const result = [...rootIds];
         const queue = [...rootIds];
+
         while (queue.length > 0) {
             const current = queue.shift()!;
-            const children = await prisma.folder.findMany({
+            const children = await client.folder.findMany({
                 where: { parentId: current, userId: uuid },
                 select: { id: true },
             });
+
             for (const child of children) {
                 result.push(child.id);
                 queue.push(child.id);
@@ -226,36 +204,53 @@ export const DBService = {
     deleteFolder: async (uuid: string, folderId: string) => {
         const folder = await prisma.folder.findFirst({ where: { id: folderId, userId: uuid } });
         if (!folder) return { success: false, message: "Folder not found" };
-        if (!folder.parentId) return { success: false, message: "Cannot delete root folder" };
 
-        const allIds = await DBService._collectDescendantFolderIds(uuid, [folderId]);
+        const parentId = folder.parentId;
+        if (parentId === null) return { success: false, message: "Cannot delete root folder" };
 
-        await prisma.desktopItem.deleteMany({ where: { folderId: { in: allIds }, userId: uuid } });
-        await prisma.folder.deleteMany({ where: { id: { in: allIds }, userId: uuid } });
+        const result = await prisma.$transaction(async (tx) => {
+            const allIds = await DBService._collectDescendantFolderIds(uuid, [folderId], tx);
+            await tx.desktopItem.deleteMany({ where: { folderId: { in: allIds }, userId: uuid } });
+            await tx.folder.deleteMany({ where: { id: { in: allIds }, userId: uuid } });
+            await bumpVersion(parentId, tx);
+        });
 
-        await bumpVersion(folder.parentId);
-
+        logger.info("[deleteFolder] Result is: " + result);
         return { success: true };
     },
 
-    createUserFolder: async (
-        uuid: string,
-        rootFolderId: string,
-        folderName: string,
-        parentFolderId: string,
-        cell: number,
-    ) => {
-        const actualParentId = resolveFolderId(rootFolderId, parentFolderId);
-
+    createUserFolder: async (uuid: string, folderName: string, parentFolderId: string, cell: number) => {
         try {
-            const folder = await prisma.folder.create({
-                data: { name: folderName, parentId: actualParentId, cell, userId: uuid },
+            const result = await prisma.$transaction(async (tx) => {
+                const folder = await tx.folder.create({
+                    data: { name: folderName, parentId: parentFolderId, cell, userId: uuid },
+                });
+
+                await bumpVersion(parentFolderId, tx);
             });
-            await bumpVersion(actualParentId);
-            return { success: true, data: folder };
+
+            return { success: true, data: result };
         } catch (e) {
-            const errMsg = e instanceof Error ? e.message : String(e);
-            return { success: false, message: "Failed to create folder", error: errMsg };
+            return { success: false, message: "Failed to create folder", error: e };
+        }
+    },
+
+    registerDesktopItem: async (uuid: string, desktopItem: DesktopItem) => {
+        try {
+            const result = await prisma.desktopItem.create({
+                data: {
+                    id: desktopItem.id,
+                    type: desktopItem.type,
+                    name: desktopItem.name,
+                    bytes: desktopItem.bytes,
+                    cell: desktopItem.cell,
+                    userId: uuid,
+                    folderId: desktopItem.folderId,
+                },
+            });
+            return { success: true, data: result };
+        } catch (e) {
+            return { success: false, message: "Failed to create the desktop item", error: e };
         }
     },
 

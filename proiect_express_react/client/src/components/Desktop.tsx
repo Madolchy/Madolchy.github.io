@@ -4,6 +4,7 @@ import "./Desktop.css";
 
 import { useGrid } from "../hooks/useGrid";
 import { useDesktopIcons } from "../hooks/useDesktopIcons";
+import { AuthService } from "../services/AuthService";
 
 import { GridContainer } from "./GridContainer";
 import { useWindowManager } from "@/context/WindowManagerContext";
@@ -14,7 +15,7 @@ import { useDesktopDrop } from "@/hooks/useDesktopDrop";
 import { handleSelect } from "@/context/IconSelectionContext";
 import type { DesktopItem } from "@/types/data";
 
-export default function Desktop({ folderId = "root", boxPerRow = 16 }) {
+export default function Desktop({ folderId = AuthService.getRootFolderId() ?? "root", boxPerRow = 16 }) {
     const [boxNumberPerRow] = useState(boxPerRow);
     const onCellDrop = useDesktopDrop(folderId);
 

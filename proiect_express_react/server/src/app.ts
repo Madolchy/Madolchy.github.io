@@ -9,11 +9,12 @@ import helmet from "helmet";
 import cors from "cors";
 import pino from "pino";
 import { isProd, port, bindAddress, storageBackend } from "./settings.js";
-import { R2FileManager } from "./services/FileManagerService.js";
-import { createFileTransferRouter } from "./routers/fileManagers/FileTransferRouter.js";
+import { createFileTransferRouter } from "./routers/FileTransferRouter.js";
 import type { FileManager } from "./interfaces/storage.js";
-import { authRouter } from "./routers/Authenticator.js";
+import { authRouter } from "./routers/AuthRouter.js";
 import { createDesktopRouter } from "./routers/DesktopRouter.js";
+import multer from "multer";
+import { R2FileManager } from "./storage/R2FileManager.js";
 
 export const logger = pino({
     transport: {
@@ -57,13 +58,15 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 
+const multerInstance = multer({ storage: multer.memoryStorage() });
+
 const fm = createFileManager();
-app.use("/api", createFileTransferRouter(fm));
+app.use("/api", createFileTransferRouter(fm, multerInstance));
 app.use("/api", createDesktopRouter(fm));
 app.use("/api", authRouter);
 
 // --- GLOBAL ERROR HANDLER ---
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error("Unhandled Server Error:", err);
+    logger.error("Unhandled Server Error:" + err);
     res.status(500).json({ success: false, message: "Internal server error" });
 });

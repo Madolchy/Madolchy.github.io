@@ -1,13 +1,22 @@
 import { Router, type Request, type Response } from "express";
 import { DBService } from "../db/DBService.js";
 import { requireLogin } from "../middleware/RequireLogin.js";
-import { VisitCounter } from "../middleware/VisitCounter.js";
 import type { FileManager } from "../interfaces/storage.js";
+import { validateBody, validateParams, validateQuery } from "../middleware/zodValidation.js";
+import {
+    BackgroundRequestSchema,
+    DesktopGetRequestSchema,
+    DesktopPutRequetSchema,
+    FolderDeleteRequestSchema,
+    FolderPostRequestSchema,
+} from "../types/desktop.js";
+import { FolderDeleteArgsSchema } from "../generated/zod/index.js";
 
 export function createDesktopRouter(fm: FileManager) {
     const desktopRouter = Router();
+    desktopRouter.use(requireLogin);
 
-    desktopRouter.get("/background", requireLogin, async (req: Request, res: Response) => {
+    desktopRouter.get("/background", async (req: Request, res: Response) => {
         if (!fm) return res.status(501).json({ message: "This feature is currently disabled." });
 
         const uuid = req.auth!.id;
@@ -23,43 +32,33 @@ export function createDesktopRouter(fm: FileManager) {
         }
     });
 
-    desktopRouter.post("/background", requireLogin, async (req: Request, res: Response) => {
+    desktopRouter.post("/background", validateBody(BackgroundRequestSchema), async (req: Request, res: Response) => {
         const uuid = req.auth!.id;
 
         const { backgroundUuid } = req.body;
-        if (!backgroundUuid) return res.status(400).json({ success: false, message: "Background is required" });
-
         const result = await DBService.setUserBackground(uuid, backgroundUuid);
         if (result.success) {
             return res.status(200).json({ success: true, message: "Background set successfully" });
-        } else {
-            return res.status(400).json({ success: false, message: "Failed to set background" });
         }
+
+        return res.status(400).json({ success: false, message: "Failed to set background" });
     });
 
-    desktopRouter.post("/folder", requireLogin, async (req: Request, res: Response) => {
-        const uuid = req.auth!.id;
-        const rootFolderId = req.auth!.rootFolderId;
+    desktopRouter.post("/folder", validateBody(FolderPostRequestSchema), async (req: Request, res: Response) => {
+        const { id: uuid } = req.auth!;
         const { folderName, folderId, cell } = req.body;
 
-        if (!folderName || !folderId || cell == null) {
-            return res.status(400).json({ success: false, message: "folderName and id and cell required" });
-        }
-
-        const result = await DBService.createUserFolder(uuid, rootFolderId, folderName, folderId, cell);
+        const result = await DBService.createUserFolder(uuid, folderName, folderId, cell);
         if (!result.success) {
             return res.status(400).json({ success: false, message: result.message });
         }
+
         return res.status(200).json({ success: true, data: result.data });
     });
 
-    desktopRouter.delete("/folder/:id", requireLogin, async (req: Request, res: Response) => {
+    desktopRouter.delete("/folder/:id", validateParams(FolderDeleteRequestSchema), async (req: Request, res: Response) => {
         const uuid = req.auth!.id;
-        const folderId = req.params.id;
-
-        if (!folderId) {
-            return res.status(400).json({ success: false, message: "folderId required" });
-        }
+        const folderId = req.params.id as string;
 
         if (folderId === "root") {
             return res.status(400).json({ success: false, message: "Cannot delete root folder" });
@@ -72,33 +71,28 @@ export function createDesktopRouter(fm: FileManager) {
         return res.status(200).json({ success: true });
     });
 
-    desktopRouter.get("/desktop", requireLogin, async (req: Request, res: Response) => {
+    desktopRouter.get("/desktop", validateQuery(DesktopGetRequestSchema), async (req: Request, res: Response) => {
         if (!fm) return res.status(501).json({ message: "This feature is currently disabled." });
+        const uuid = req.auth!.id;
 
-        const uuid = req.auth.id;
-        const rootFolderId = req.auth.rootFolderId;
         const folderId = String(req.query.folderId);
         if (!folderId) return res.status(400).json({ success: false, message: "folderId required" });
 
-        const { items, version } = await DBService.getUserDesktop(uuid, rootFolderId, folderId);
+        const { items, folders, version } = await DBService.getUserDesktop(uuid, folderId);
 
-        const withUrl = items.map((item) => ({
-            ...item,
-            url: fm.getFileUrl(item.id),
-        }));
+        const desktopItems = [
+            ...items.map((item) => ({ ...item, url: fm.getFileUrl(item.id) })),
+            ...folders.map((f) => ({ ...f, type: "type/folder", folderId: f.parentId ?? folderId })),
+        ];
 
-        return res.status(200).json({ items: withUrl, version });
+        return res.status(200).json({ items: desktopItems, version });
     });
 
-    desktopRouter.put("/desktop", requireLogin, async (req: Request, res: Response) => {
+    desktopRouter.put("/desktop", validateQuery(DesktopPutRequetSchema), async (req: Request, res: Response) => {
         const uuid = req.auth!.id;
-        const rootFolderId = req.auth!.rootFolderId;
-        const { newDesktop, folderId, version } = req.body;
-        if (!folderId) return res.status(400).json({ success: false, message: "folderId required" });
-        if (version == null) return res.status(400).json({ success: false, message: "version required" });
+        const { newDesktop, folderId, folderVersion } = req.body;
 
-        const result = await DBService.updateUserDesktop(uuid, rootFolderId, folderId, newDesktop, version);
-
+        const result = await DBService.updateUserDesktop(uuid, folderId, newDesktop, folderVersion);
         if (!result.success) {
             const status = result.message === "Version conflict" ? 409 : 400;
             return res.status(status).json({ success: false, message: result.message });
