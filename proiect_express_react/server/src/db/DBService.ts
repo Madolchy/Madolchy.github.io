@@ -135,14 +135,16 @@ export const DBService = {
     },
 
     updateUserDesktop: async (uuid: string, folderId: string, newDesktop: DesktopItemData[], version: number) => {
-        const current = await prisma.folder.findUnique({
-            where: { id: folderId },
-            select: { version: true },
+        const result = await prisma.folder.updateMany({
+            where: { id: folderId, version: { lte: version } },
+            data: { version },
         });
-        if (!current || version < current.version) {
+
+        if (result.count === 0) {
             return { success: false, message: "Version conflict" };
         }
 
+        // We now hold the "lock" — safe to write items
         const ops: any[] = [];
         for (const item of newDesktop) {
             if (item.type === "type/folder") {
@@ -162,23 +164,17 @@ export const DBService = {
             }
         }
 
-        if (ops.length === 0) return { success: true };
-        ops.push(
-            prisma.folder.update({
-                where: { id: folderId },
-                data: { version },
-            }),
-        );
-
-        try {
-            await prisma.$transaction(ops);
-            return { success: true };
-        } catch (error) {
-            console.error("Desktop sync failed!", error);
-            return { success: false, message: "Sync failed" };
+        if (ops.length > 0) {
+            try {
+                await Promise.all(ops);
+            } catch (error) {
+                console.error("Desktop sync failed!", error);
+                return { success: false, message: "Sync failed" };
+            }
         }
-    },
 
+        return { success: true, newVersion: version + 1 };
+    },
     /** Collect all folder IDs in the subtree rooted at the given folder IDs. */
     _collectDescendantFolderIds: async (uuid: string, rootIds: string[], tx?: any): Promise<string[]> => {
         const client = tx || prisma;

@@ -37,10 +37,13 @@ export function useDesktopIcons(folderId, rows) {
 
             return { previous };
         },
+        onSuccess: (data) => {
+            if (data?.newVersion != null) {
+                versionRef.current = data.newVersion;
+            }
+        },
         onError: (_err, _vars, context) => {
             queryClient.setQueryData(["desktopIcons", folderId], context?.previous);
-        },
-        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["desktopIcons", folderId] });
         },
     });

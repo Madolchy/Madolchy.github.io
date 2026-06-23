@@ -5,3 +5,5 @@ export const bindAddress = process.env.BIND_ADDRESS || (isProd ? "0.0.0.0" : "12
 export const saltRounds = 10;
 
 export const storageBackend: "r2" | "local" | "s3" = "r2";
+
+export const fileIdLength = 12;

@@ -12,6 +12,7 @@ import type { AuthRequest } from "../interfaces/request.js";
 import type { Request, Response } from "express";
 import { validateBody, validateParams } from "../middleware/zodValidation.js";
 import { FileTransferDeleteSchema } from "../types/transfer.js";
+import { fileIdLength } from "../config.js";
 
 export function createFileTransferRouter(fm: FileManager, multer: multer.Multer) {
     const router = Router();
@@ -23,15 +24,15 @@ export function createFileTransferRouter(fm: FileManager, multer: multer.Multer)
         const file = req.file;
         if (!file) return res.status(400).json({ success: false, message: "No file upload" });
 
-        const fileId = crypto.randomBytes(12).toString("hex");
+        const fileId = crypto.randomBytes(fileIdLength).toString("hex");
         const desktopItem = {
             id: fileId,
             userId: uuid,
             name: file.originalname,
             type: file.mimetype,
             bytes: file.size,
-            cell: req.body.index,
-            folderId: req.body.folderPath,
+            cell: req.validatedBody.index,
+            folderId: req.validatedBody.folderPath,
         };
 
         const [_, dbResult] = await Promise.all([fm.registerFile(fileId, file.buffer), DBService.registerDesktopItem(uuid, desktopItem)]);
@@ -48,7 +49,7 @@ export function createFileTransferRouter(fm: FileManager, multer: multer.Multer)
 
     router.delete("/files/:id", validateParams(FileTransferDeleteSchema), async (req, res) => {
         const uuid = req.auth!.id;
-        const fileUuid = String(req.params.id);
+        const fileUuid = String(req.validatedParams.id);
 
         const safeFileUuid = path.basename(fileUuid);
         const [_, dbResult] = await Promise.all([fm.deleteFile(safeFileUuid), FileManagerService.deleteFile(uuid, safeFileUuid)]);

@@ -8,7 +8,7 @@ import morgan from "morgan";
 import helmet from "helmet";
 import cors from "cors";
 import pino from "pino";
-import { isProd, port, bindAddress, storageBackend } from "./settings.js";
+import { isProd, port, bindAddress, storageBackend } from "./config.js";
 import { createFileTransferRouter } from "./routers/FileTransferRouter.js";
 import type { FileManager } from "./interfaces/storage.js";
 import { authRouter } from "./routers/AuthRouter.js";
@@ -61,9 +61,9 @@ app.use(cookieParser());
 const multerInstance = multer({ storage: multer.memoryStorage() });
 
 const fm = createFileManager();
+app.use("/api", authRouter);
 app.use("/api", createFileTransferRouter(fm, multerInstance));
 app.use("/api", createDesktopRouter(fm));
-app.use("/api", authRouter);
 
 // --- GLOBAL ERROR HANDLER ---
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

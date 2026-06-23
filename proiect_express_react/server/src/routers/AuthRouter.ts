@@ -14,10 +14,9 @@ const isProd = () => process.env.NODE_ENV === "production";
 const isTest = () => process.env.NODE_ENV === "test";
 
 authRouter.post("/register", authLimiter, validateBody(SignupRequestSchema), async (req: Request, res: Response) => {
-    if (isProd() && !isTest())
-        return res.status(503).json({ success: false, message: "Registration is currently disabled" });
+    if (isProd() && !isTest()) return res.status(503).json({ success: false, message: "Registration is currently disabled" });
 
-    const { name, password, email } = req.body;
+    const { name, password, email } = req.validatedBody;
 
     const result = await DBService.registerUser(name, password, email);
     if (!result.success) {
@@ -28,7 +27,7 @@ authRouter.post("/register", authLimiter, validateBody(SignupRequestSchema), asy
 });
 
 authRouter.post("/login", authLimiter, validateBody(LoginSchema), async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { email, password } = req.validatedBody;
 
     const result = await DBService.loginUser(email, password);
     if (!result.success || !result.user) {

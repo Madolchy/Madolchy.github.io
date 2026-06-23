@@ -1,5 +1,5 @@
 import { app } from "./app.js";
-import { bindAddress, isProd, port } from "./settings.js";
+import { bindAddress, isProd, port } from "./config.js";
 
 app.listen(Number(port), bindAddress, (err?: Error) => {
     if (err) {

@@ -1,8 +1,8 @@
 .icon-highlight {
     background-color: rgba(0, 0, 255, 0.2);
-    border: 2px solid #00008b;
+    outline: 2px solid #00008b;
+    outline-offset: -2px;
     border-radius: 8px;
-    box-sizing: border-box;
 }
 
 .icon {
