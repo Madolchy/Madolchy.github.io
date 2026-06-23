@@ -27,6 +27,7 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
 
 # Testing
 coverage/
@@ -144,8 +145,11 @@ yarn.lock
 *.sln
 *.sw?
 
+.env.production
 proiect/*
 proiect_express_react - Copy/*
 proiect_elysia/*
 proiect_express_react/server/uploads/*
 proiect_express_react/server/*.db
+proiect_express_react/server/src/generated/*
+.opencode

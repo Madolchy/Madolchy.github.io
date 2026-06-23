@@ -2,10 +2,10 @@ import { Navigate } from "react-router-dom";
 import { AuthService } from "../services/AuthService";
 
 export function Authenticated({ children }) {
-    const isValid = AuthService.isTokenValid()
+    console.log("Does this run everytime?");
+    const hasToken = AuthService.hasToken();
 
-    if (!isValid) {
-        // AuthService.removeToken()
+    if (!hasToken) {
         return <Navigate to="/login" replace />;
     }
 
@@ -13,12 +13,12 @@ export function Authenticated({ children }) {
 }
 
 export function Unauthenticated({ children }) {
-    const isValid = AuthService.isTokenValid()
+    console.log("Does this run everytime?");
+    const hasToken = AuthService.hasToken();
 
-    if (isValid) {
+    if (hasToken) {
         return <Navigate to="/desktop" replace />;
     }
 
-    // AuthService.removeToken();
     return children;
 }

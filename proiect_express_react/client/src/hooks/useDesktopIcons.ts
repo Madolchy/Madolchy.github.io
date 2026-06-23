@@ -1,86 +1,71 @@
-import { useState, useRef, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileManagerService } from '../services/FileManagerService';
-import { apiClient } from '../client/apiClient';
+import { useCallback, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileManagerService } from "../services/FileManagerService";
 
-export function useDesktopIcons() {
+export function useDesktopIcons(folderId, rows) {
     const queryClient = useQueryClient();
-    const { data: gridData, isLoading, isError } = useQuery({
-        queryKey: ['desktopIcons'],
-        queryFn: async () => await FileManagerService.getUserDesktop(),
-        staleTime: Infinity,
-        select: (gridData) => {
-            if (!gridData) return [];
+    const versionRef = useRef(0);
 
-            // will need to use grid boxes depenncy later instead of 16
-            const gridArray = Array.from({ length: 16 * 16});
-
-            gridData.forEach((element) => {
-                gridArray[element.cell] = element;
+    const {
+        data: gridData,
+        isLoading,
+        isError,
+    } = useQuery({
+        queryKey: ["desktopIcons", folderId],
+        queryFn: async () => {
+            const raw = await FileManagerService.getUserDesktop(folderId);
+            if (!raw) return undefined;
+            versionRef.current = Math.max(versionRef.current, raw.version);
+            const gridArray = Array.from({ length: rows * rows });
+            raw.items.forEach((el) => {
+                gridArray[el.cell] = el;
             });
-
             return gridArray;
+        },
+        staleTime: Infinity,
+    });
+
+    const { mutate: updateDesktop } = useMutation({
+        mutationFn: (newDesktop: any[]) => FileManagerService.putUserDesktop(newDesktop, folderId, versionRef.current),
+        onMutate: (newDesktop) => {
+            versionRef.current += 1;
+
+            queryClient.cancelQueries({ queryKey: ["desktopIcons", folderId] });
+
+            const previous = queryClient.getQueryData(["desktopIcons", folderId]);
+            queryClient.setQueryData(["desktopIcons", folderId], newDesktop);
+
+            return { previous };
+        },
+        onSuccess: (data) => {
+            if (data?.newVersion != null) {
+                versionRef.current = data.newVersion;
+            }
+        },
+        onError: (_err, _vars, context) => {
+            queryClient.setQueryData(["desktopIcons", folderId], context?.previous);
+            queryClient.invalidateQueries({ queryKey: ["desktopIcons", folderId] });
         },
     });
 
-    const [draggedBox, setDraggedBox] = useState<number | undefined>(undefined);
-    const draggedBoxRef = useRef<number | undefined>(undefined);
+    const handleSwap = useCallback(
+        (currentPosition: number, newPosition: number) => {
+            if (currentPosition === undefined || currentPosition === newPosition) return;
 
-    const resetSelect = useCallback(() => {
-            draggedBoxRef.current = undefined
-            setDraggedBox(undefined)
-    }, [])
+            const currentData = queryClient.getQueryData<any[]>(["desktopIcons", folderId]);
+            if (!currentData || currentData.length === 0) return;
 
-    const handleSelect = useCallback((index: number) => {
-        if (draggedBoxRef.current === index) return;
+            const newGrid = [...currentData];
+            const sourceIcon = newGrid[currentPosition];
+            const targetIcon = newGrid[newPosition];
 
-        draggedBoxRef.current = index;
-        setDraggedBox(index);
-    }, []);
+            newGrid[newPosition] = sourceIcon ? { ...sourceIcon, cell: newPosition } : undefined;
+            newGrid[currentPosition] = targetIcon ? { ...targetIcon, cell: currentPosition } : undefined;
 
-    // use tanstack mutate later
-    // bug: if you try to swap empty space with a icon space, the swap happens locally but server refreshes correct one later.
-    const handleSwap = useCallback(async (newPosition: number) => {
-        const sourceIndex = draggedBoxRef.current;
+            updateDesktop(newGrid);
+        },
+        [folderId, queryClient, updateDesktop],
+    );
 
-        if (sourceIndex === undefined || sourceIndex === newPosition) return;
-
-        // handle this on failed
-        draggedBoxRef.current = newPosition;
-        setDraggedBox(newPosition);
-
-        const previousData = queryClient.getQueryData(['desktopIcons']);
-        queryClient.setQueryData(['desktopIcons'], (oldData: any[]) => {
-            if (!oldData) return [];
-            return oldData.map((icon) => {
-                if (icon.cell === sourceIndex) return { ...icon, cell: newPosition };
-                if (icon.cell === newPosition) return { ...icon, cell: sourceIndex };
-                return icon;
-            });
-        });
-
-        try {
-            await apiClient.post('/desktop/swap', {
-                json: { first: sourceIndex, second: newPosition }
-            }).json();
-
-        } catch (error) {
-            console.error("Server rejected the swap. Rolling back UI...", error);
-
-            if (previousData) {
-                queryClient.setQueryData(['desktopIcons'], previousData);
-            }
-        }
-    }, [queryClient]);
-
-
-    return {
-        gridData,
-        isLoading,
-        isError,
-        draggedBox,
-        resetSelect,
-        handleSelect,
-        handleSwap
-    };
+    return { gridData, isLoading, isError, handleSwap };
 }

@@ -1,4 +1,6 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
+import type { jwtData } from "../types/jwt.js";
+import { TokenType } from "../types/jwt.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -6,30 +8,20 @@ if (!JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined in environment variables");
 }
 
-
 export const AuthService = {
-    generateToken: (payload: { id: string }) => {
-        return jwt.sign(
-            { ...payload, tokenType: 'active' },
-            JWT_SECRET as jwt.Secret,
-            { expiresIn: '30m' }
-        );
+    generateToken: (payload: jwtData) => {
+        return jwt.sign({ ...payload, tokenType: TokenType.ACCESS }, JWT_SECRET, { expiresIn: "20m" });
     },
 
-    generateRefreshToken: (payload: { id: string }) => {
-        return jwt.sign(
-            { ...payload, tokenType: 'refresh' },
-            JWT_SECRET as jwt.Secret,
-            { expiresIn: '7d' }
-        );
+    generateRefreshToken: (payload: jwtData) => {
+        return jwt.sign({ ...payload, tokenType: TokenType.REFRESH }, JWT_SECRET, { expiresIn: "7d" });
     },
 
-    verifyToken: (token: string) => {
+    decodeToken: (token: string) => jwt.verify(token, JWT_SECRET) as jwtData,
+    verifyRefreshToken: (token: string): jwtData | null => {
         try {
-            const decoded = jwt.verify(token, JWT_SECRET as jwt.Secret)
-
-            // Explicitly check that this is a refresh token
-            if (decoded.tokenType !== 'refresh') {
+            const decoded = AuthService.decodeToken(token);
+            if (decoded.tokenType !== TokenType.REFRESH) {
                 console.error("Attempted to use a non-refresh token for a refresh operation");
                 return null;
             }
@@ -38,5 +30,5 @@ export const AuthService = {
         } catch (error) {
             return null;
         }
-    }
+    },
 };

@@ -1,65 +1,90 @@
-import React from 'react';
-import { Rnd } from 'react-rnd';
-import { useBlob } from '../context/BlobContext';
+import React from "react";
+import { Rnd } from "react-rnd";
+import { FileFactory } from "./FileFactory";
+import "./SubWindow.css";
+import { Card, CardContent, CardHeader } from "./ui/card";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList } from "./ui/breadcrumb";
+import { Button } from "./ui/button";
+import { X } from "lucide-react";
+import { resetSelect } from "../context/IconSelectionContext";
 
-export const SubWindow = React.memo(function SubWindow({ onDragStart, windowData, onClose, onBringToFront }) {
-    const { getUrl } = useBlob();
+interface WindowData {
+    id: string | number;
+    title: string;
+    zIndex: number;
+    data: {
+        id: string;
+        type: string;
+        name: string;
+        thumbnail?: Blob;
+    };
+}
+
+interface SubWindowProps {
+    onDragStart: () => void;
+    windowData: WindowData;
+    onClose: (winId: string | number) => void;
+    onBringToFront: (winId: string | number) => void;
+}
+
+export const SubWindow = React.memo(function SubWindow({
+    onDragStart,
+    windowData,
+    onClose,
+    onBringToFront,
+}: SubWindowProps) {
     const { title, zIndex, data, id } = windowData;
 
-    const imgUrl = (() => {
-        if (!data?.thumbnail || !data?.id) return null;
-        return getUrl(data.id, data.thumbnail);
-    })();
-
-    const defaultPosition = React.useMemo(() => ({
+    const defaultPosition = {
         x: 300,
         y: 400,
         width: 320,
-        height: 200
-    }), []);
+        height: 200,
+    };
 
     return (
         <Rnd
             default={defaultPosition}
-            bounds="window"
-            dragHandleClassName="window-header"
+            dragHandleClassName="window-draggable"
             onDragStart={() => {
                 onBringToFront(id);
                 onDragStart();
             }}
-            onMouseDown={() => {
+            onMouseDown={(e) => {
                 onBringToFront(id);
+                if (e.target.closest(".window-draggable")) resetSelect();
             }}
             style={{
                 zIndex,
                 top: 0,
                 left: 0,
-                willChange: 'transform',
-                userSelect: 'none'
+                willChange: "transform",
+                userSelect: "none",
             }}
+            minWidth={300}
+            minHeight={250}
+            onContextMenu={(e) => e.preventDefault()}
         >
-            <div className="border border-dark bg-white h-100 d-flex flex-column shadow-sm">
-                <div className="window-header bg-primary text-white px-2 d-flex justify-content-between align-items-center" style={{ cursor: 'grab' }}>
-                    <span className="text-truncate" style={{ fontSize: '0.9rem' }}>{title || data?.name || "Window"}</span>
-                    <button
-                        className="btn btn-sm btn-danger p-0 ms-2"
-                        style={{ width: '20px', height: '20px', lineHeight: '1' }}
-                        onClick={(e) => { e.stopPropagation(); onClose(id); }}
-                    >
-                        &times;
-                    </button>
-                </div>
+            <Card className="w-full h-full flex flex-col p-4 overflow-hidden">
+                <CardHeader className="flex flex-row window-draggable items-start justify-between p-0 mb-3 flex-none">
+                    <Breadcrumb className="flex-1 min-w-0">
+                        <BreadcrumbList>
+                            <BreadcrumbItem className="truncate block">{title}</BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
 
-                <div className="flex-grow-1 overflow-hidden bg-light">
-                    {imgUrl ? (
-                        <img src={imgUrl} className="w-100 h-100 object-fit-contain" alt={title} draggable={false} />
-                    ) : (
-                        <div className="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
-                            No Image
-                        </div>
-                    )}
-                </div>
-            </div>
+                    <Button variant="ghost" size="icon" className="h-auto p-1 -mt-1" onClick={() => onClose(id)}>
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </Button>
+                </CardHeader>
+
+                <CardContent className="p-0 flex-1 min-h-0">
+                    <div className="w-full h-full overflow-hidden rounded-md">
+                        <FileFactory data={data} />
+                    </div>
+                </CardContent>
+            </Card>
         </Rnd>
     );
 });

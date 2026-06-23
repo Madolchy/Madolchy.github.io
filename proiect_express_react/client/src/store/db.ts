@@ -1,7 +1,7 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
-const DB_NAME = 'AppDatabase';
-const STORE_NAME = 'thumbnails';
+const DB_NAME = "AppDatabase";
+const STORE_NAME = "thumbnails";
 
 let dbPromise: Promise<IDBPDatabase<any>> | null = null;
 
@@ -32,6 +32,7 @@ export const db = {
     getThumbnail: async (id: string) => {
         try {
             const db = await getDB();
+            console.log("Trying to get thumbnail with it: ", id);
             const blob = await db.get(STORE_NAME, id);
             return blob;
         } catch (error) {
@@ -60,7 +61,27 @@ export const db = {
             console.error("something failed while getting all keys ", error);
             return null;
         }
-    }
-}
+    },
+
+    saveBackground: async (uuid: string, url: string) => {
+        try {
+            const db = await getDB();
+            await db.put(STORE_NAME, { uuid, backgroundUrl: url }, "background");
+        } catch (error) {
+            console.error("Failed to save background:", error);
+        }
+    },
+
+    getBackground: async () => {
+        try {
+            const db = await getDB();
+            const data = await db.get(STORE_NAME, "background");
+            return data;
+        } catch (error) {
+            console.error("Failed to get background:", error);
+            return undefined;
+        }
+    },
+};
 
 console.log("getdb:", getDB);

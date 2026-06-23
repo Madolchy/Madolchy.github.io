@@ -1,171 +1,72 @@
-import 'dotenv/config';
+import "dotenv/config";
 
-import express from 'express';
-import type { Request, Response } from 'express';
-import { DBService } from './db/DBService.js';
-import { uploadService } from './services/diskStorageService.js';
-import { requireLogin } from './middleware/RequireLogin.js';
-import { FileManagerService } from './services/FileManagerService.js';
-import { VisitCounter } from './middleware/VisitCounter.js';
-import cookieParser from 'cookie-parser';
-import ms from 'ms';
-import { AuthService } from './services/AuthService.js';
+import express from "express";
+import type { Request, Response, NextFunction } from "express";
+import cookieParser from "cookie-parser";
 
-const app = express();
-const port = process.env.PORT || 3000;
+import morgan from "morgan";
+import helmet from "helmet";
+import cors from "cors";
+import pino from "pino";
+import { isProd, port, bindAddress, storageBackend } from "./config.js";
+import { createFileTransferRouter } from "./routers/FileTransferRouter.js";
+import type { FileManager } from "./interfaces/storage.js";
+import { authRouter } from "./routers/AuthRouter.js";
+import { createDesktopRouter } from "./routers/DesktopRouter.js";
+import multer from "multer";
+import { R2FileManager } from "./storage/R2FileManager.js";
 
-app.use(express.json());
-app.use(cookieParser())
-
-app.get('/', VisitCounter, (req: Request, res: Response) => {
-    res.send('Hello from Express and TypeScript!');
+export const logger = pino({
+    transport: {
+        target: "pino-pretty",
+    },
 });
 
-app.post("/api/register", async (req: Request, res: Response) => {
-    const result = await DBService.registerUser(req);
-    if (!result.success) {
-        console.log(result)
-        return res.status(400).json({
-            success: false,
-            message: result.message
-        })
+function createFileManager(): FileManager {
+    switch (storageBackend) {
+        case "r2":
+            return new R2FileManager({
+                endpoint: process.env.R2_ENDPOINT!,
+                accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+                bucketName: process.env.R2_RW_BUCKET!,
+                devUrl: process.env.R2_PUBLIC_URL!,
+            });
+        case "local":
+            throw new Error(`Storage backend "${storageBackend}" not implemented yet.`);
+        default:
+            throw new Error(`Unsupported storage backend: ${storageBackend}`);
     }
+}
 
-    return res.status(200).json({
-        success: true,
-        message: "yay"
-    })
+export const app = express();
 
-})
+app.set("trust proxy", 1);
 
-app.post("/api/login", async (req: Request, res: Response) => {
-    const result = await DBService.loginUser(req);
-    if (!result.success) {
-        console.log(result)
-        return res.status(400).json({
-            success: false,
-            message: "Login failed"
-        })
-    }
+app.use(
+    cors({
+        origin: isProd
+            ? ["https://lastendconductor.lunaticbadrabbit.workers.dev", "https://madolchy.github.io"]
+            : ["http://localhost:5173", "http://localhost:4173"],
+        credentials: true,
+    }),
+);
 
-    if (result.refreshToken) {
-        res.cookie('refreshToken', result.refreshToken, {
-            httpOnly: true,
-            secure: false, // change this for prod ofc
-            sameSite: 'strict',
-            maxAge: ms('7d')
-        });
-    }
+app.use(helmet());
+app.use(morgan("dev"));
 
-    return res.status(200).json({
-        success: true,
-        token: result.token
-    })
-})
+app.use(express.json());
+app.use(cookieParser());
 
-app.post("/api/refresh", async (req: Request, res: Response) => {
-    const refreshToken = req.cookies.refreshToken;
+const multerInstance = multer({ storage: multer.memoryStorage() });
 
-    if (!refreshToken) {
-        return res.status(401).json({
-            success: false,
-            message: "No refresh token provided"
-        })
-    }
+const fm = createFileManager();
+app.use("/api", authRouter);
+app.use("/api", createFileTransferRouter(fm, multerInstance));
+app.use("/api", createDesktopRouter(fm));
 
-    const decoded = AuthService.verifyToken(refreshToken);
-    if (!decoded) {
-        return res.status(401).json({
-            success: false,
-            message: "Invalid refresh token"
-        })
-    }
-
-    const token = AuthService.generateToken({ id: decoded.id });
-    return res.status(200).json({
-        success: true,
-        token: token
-    })
-})
-
-app.post("/api/logout", requireLogin, async (req: Request, res: Response) => {
-    const result = await DBService.logoutUser(req);
-    if (!result.success) {
-        console.log(result)
-        return res.status(400).json({
-            success: false,
-            message: "Logout failed somehow"
-        })
-    }
-
-    res.clearCookie('refreshToken');
-
-    return res.status(200).json({
-        success: true,
-    })
-})
-
-
-
-app.post('/api/upload', requireLogin, uploadService.single('myFile'), async (req: Request, res: Response) => {
-    const file = req.file;
-    if (!file) {
-        return res.status(400).json({ success: false, message: "No file upload" })
-    }
-
-    const uuid = req.auth.id;
-    const cell = parseInt(req.body.index, 10);
-
-    const metadata = {
-        filename: file.originalname,
-        file_type: file.mimetype,
-        bytes: file.size,
-        cell: cell,
-    }
-
-    const result = await FileManagerService.register_file(uuid, metadata)
-    if (result.success && result.data) {
-        return res.status(200).json(result.data)
-    }
-    else {
-        console.log(result)
-        return res.status(400).json({})
-    }
-})
-
-app.post('/api/desktop/swap', requireLogin, async (req: Request, res: Response) => {
-    const uuid = req.auth.id;
-
-    const { first, second } = req.body;
-
-    const result = await FileManagerService.swap_items(first, second, uuid);
-    console.log(result)
-    if (result.success) {
-        return res.status(200).json({});
-    }
-
-    return res.status(400).json({});
-})
-
-app.get('/api/desktop', VisitCounter, requireLogin, async (req: Request, res: Response) => {
-    const uuid = req.auth.id;
-    console.log(uuid)
-    const items = await FileManagerService.getUserDesktop(uuid);
-    if (!items) {
-        res.status(400).json({})
-    }
-
-    console.log(items)
-    res.status(200).json(items)
-
-
-})
-
-app.post("/api/db", async (req: Request, res: Response) => {
-    console.log("All avalible users: ", await DBService.getUsers());
-    console.log(await DBService.registerUser(req));
-})
-
-app.listen(port as number, "127.0.0.1", () => {
-    console.log(`Server is running at http://127.0.0.1:${port}`);
+// --- GLOBAL ERROR HANDLER ---
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    logger.error("Unhandled Server Error:" + err);
+    res.status(500).json({ success: false, message: "Internal server error" });
 });

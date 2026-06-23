@@ -1,30 +1,66 @@
+.tab-navbar {
+    background-color: #dbe1e6;
+    /* Graish color pleasant to the eye */
+    height: 48px;
+    border-bottom: 1px solid #caced1;
+}
+
+.tab-tab {
+    cursor: pointer;
+    background-color: transparent;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    border-right: 1px solid #caced1;
+    min-width: 120px;
+    max-width: 240px;
+    height: 34px;
+    border-radius: 8px;
+    user-select: none;
+    color: #495057;
+    margin: 0 4px;
+    /* Space between tabs */
+}
+
+.tab-tab:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+    /* White fade in/out but readable */
+}
+
+.tab-tab:active,
+.tab-add-btn:active {
+    transform: scale(0.92) !important;
+}
+
+.tab-add-btn {
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    color: #495057;
+}
+
+.tab-add-btn:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
 .nav-gear-icon {
     margin-right: 1.5rem;
 }
 
-/* Ensure the icon feels clickable */
+/* Ensure the icon feels clickable and has rotation transition */
 .gear-hover-icon {
     cursor: pointer;
+    transition: transform 1s ease-in-out, color 0.3s ease-in-out, filter 0.3s ease-in-out;
+    color: #495057;
 }
 
-/* 1. Setup the Filled Gear to be invisible by default */
-.gear-hover-icon .gear-filled {
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
+.gear-hover-icon:hover {
+    color: #212529;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+    transform: rotate(360deg);
 }
 
-/* 2. Setup the Hollow Gear to be visible by default */
+/* Remove the filled/hollow swap logic and just keep them visible */
+.gear-hover-icon .gear-filled,
 .gear-hover-icon .gear-hollow {
     opacity: 1;
-    transition: opacity 0.2s ease-in-out;
-}
-
-/* 3. When the SVG is hovered, fade IN the filled gear */
-.gear-hover-icon:hover .gear-filled {
-    opacity: 1;
-}
-
-/* 4. When the SVG is hovered, fade OUT the hollow gear */
-.gear-hover-icon:hover .gear-hollow {
-    opacity: 0;
 }

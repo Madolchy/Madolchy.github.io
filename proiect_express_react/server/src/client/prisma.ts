@@ -1,17 +1,28 @@
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { saltRounds } from "../config.js";
 import { PrismaClient } from "../generated/prisma/client.js";
+import { DesktopItemUncheckedCreateInputSchema, DesktopItemUncheckedUpdateInputSchema } from "../generated/zod/index.js";
+import bcrypt from "bcrypt";
 
-
-const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
-export const prisma = new PrismaClient({ adapter }).$extends({
+export const prisma = new PrismaClient().$extends({
     query: {
+        user: {
+            async create({ args, query }) {
+                if (args.data.passwordHash) {
+                    args.data.passwordHash = await bcrypt.hash(args.data.passwordHash, saltRounds);
+                }
+                return query(args);
+            },
+            async update({ args, query }) {
+                if (args.data.passwordHash) {
+                    args.data.passwordHash = await bcrypt.hash(args.data.passwordHash, saltRounds);
+                }
+                return query(args);
+            },
+        },
         $allModels: {
             async $allOperations({ operation, model, args, query }) {
-                // await new Promise((resolve) => setTimeout(resolve, 200));
                 return query(args);
             },
         },
     },
-});;
-
-
+});
