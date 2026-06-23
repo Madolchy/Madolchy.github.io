@@ -14,6 +14,7 @@ import { useContextMenu } from "@/context/ContextMenuContext";
 import { useDesktopDrop } from "@/hooks/useDesktopDrop";
 import { handleSelect } from "@/context/IconSelectionContext";
 import type { DesktopItem } from "@/types/data";
+import { useContextMenuStore } from "@/store/contextMenuStore";
 
 export default function Desktop({ folderId = AuthService.getRootFolderId() ?? "root", boxPerRow = 16 }) {
     const [boxNumberPerRow] = useState(boxPerRow);
@@ -23,7 +24,7 @@ export default function Desktop({ folderId = AuthService.getRootFolderId() ?? "r
     const { boxSize, containerRef, actualColumns } = useGrid(boxNumberPerRow, isLoading);
     const { openWindow } = useWindowManager();
     const { backgroundUrl } = useDesktopManager();
-    const { openContext } = useContextMenu();
+    const openContext = useContextMenuStore((s) => s.openContext);
     const { getActionsForId } = useDesktopActions(folderId);
 
     const handleContextMenu = useCallback(
